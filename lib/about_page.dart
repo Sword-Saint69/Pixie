@@ -1,3 +1,4 @@
+import 'package:gotohp_rs/brand.dart';
 import 'package:material_ui/material_ui.dart';
 
 class AboutPage extends StatelessWidget {
@@ -15,17 +16,13 @@ class AboutPage extends StatelessWidget {
             children: [
               const SizedBox(height: 30),
               Container(
-                width: 92,
-                height: 92,
+                width: 104,
+                height: 104,
                 decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [cs.primary, cs.tertiary],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
+                  color: cs.primary.withValues(alpha: 0.08),
                   borderRadius: BorderRadius.circular(28),
                 ),
-                child: const Icon(Icons.auto_awesome_rounded, color: Colors.white, size: 46),
+                child: const PixieLogo(size: 92),
               ),
               const SizedBox(height: 20),
               Text('Pixie', style: TextStyle(fontSize: 28, fontWeight: FontWeight.w800, color: cs.onSurface)),

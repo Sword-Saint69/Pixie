@@ -47,6 +47,7 @@ rust_builder/              cargokit build glue (generated)
 
 - **Sidebar** — Upload, Settings, Accounts, About. Collapses to a bottom bar on narrow windows.
 - **Settings bar** — Appearance / Upload / Advanced tabs on the Settings page.
+- **Branding** — the supplied Pixie mascot is bundled at `assets/pixie_logo.png` and used in the sidebar, the drop-zone empty state, the About page and the Android launcher icon.
 - **Themes** — cycle with the sun icon in the app bar, or pick mode and accent under Settings → Appearance. Choices survive restarts via `shared_preferences`.
 - **Minimal upload screen** — drop zone, queue chips, album field, compact counters and an activity panel that only appears once a run starts.
 

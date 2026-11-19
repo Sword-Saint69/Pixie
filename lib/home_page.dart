@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:desktop_drop/desktop_drop.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:gotohp_rs/brand.dart';
 import 'package:gotohp_rs/src/rust/api.dart';
 import 'package:gotohp_rs/src/rust/api/app_types.dart';
 import 'package:material_ui/material_ui.dart';
@@ -221,11 +222,9 @@ class _HomePageState extends State<HomePage> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(
-                        _dragOver ? Icons.download_rounded : Icons.auto_awesome_rounded,
-                        size: 34,
-                        color: cs.primary,
-                      ),
+                      _dragOver
+                          ? Icon(Icons.download_rounded, size: 34, color: cs.primary)
+                          : const PixieLogo(size: 40),
                       const SizedBox(height: 10),
                       Text(
                         _dragOver ? 'Release to add files' : 'Drop photos, videos or folders here',

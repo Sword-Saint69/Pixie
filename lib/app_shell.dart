@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:material_ui/material_ui.dart';
 import 'package:gotohp_rs/about_page.dart';
+import 'package:gotohp_rs/brand.dart';
 import 'package:gotohp_rs/accounts_page.dart';
 import 'package:gotohp_rs/home_page.dart';
 import 'package:gotohp_rs/settings_page.dart';
@@ -55,6 +56,7 @@ class _AppShellState extends State<AppShell> {
     ];
 
     final appBar = AppBar(
+      leading: wide ? null : const PixieLogo(size: 26),
       title: Text(
         _titles[_index],
         style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 18),
@@ -118,13 +120,13 @@ class _AppShellState extends State<AppShell> {
               child: Column(
                 children: [
                   Container(
-                    width: 38,
-                    height: 38,
+                    width: 42,
+                    height: 42,
                     decoration: BoxDecoration(
-                      color: cs.primary.withValues(alpha: 0.12),
+                      color: cs.primary.withValues(alpha: 0.10),
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: Icon(Icons.auto_awesome_rounded, color: cs.primary),
+                    child: const PixieLogo(size: 36),
                   ),
                   const SizedBox(height: 8),
                   Text(
