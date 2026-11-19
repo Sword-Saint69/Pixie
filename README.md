@@ -1,6 +1,7 @@
-# gotohp-rs
+# Pixie (gotohp-rs core)
 
-Rust core + Flutter GUI reimplementation of the upload pipeline in
+**Pixie** is the Flutter UI over the `gotohp-rs` Rust core — a reimplementation
+of the upload pipeline in
 [`xob0t/gotohp`](https://github.com/xob0t/gotohp) (reference commit `2a5c1b9`).
 The Rust library is also exposed as a standalone CLI, so the same protocol code
 runs in both front ends.
@@ -17,7 +18,8 @@ runs in both front ends.
 | Albums (named album from uploaded media keys; AUTO = one album per source dir) | working | `rust/src/core/{api,upload}.rs` |
 | File discovery, supported-extension filter, recursive scan, exclude dir, canonical-path dedup | working | `rust/src/core/upload.rs` |
 | Date from filename (upstream's four regex patterns) | working | `rust/src/core/upload.rs` |
-| GUI: accounts, settings, drag-drop/file picker, live per-thread progress, results, cancel | working | `lib/` |
+| GUI: Pixie shell with sidebar, minimal upload screen, dedicated settings bar, accounts and about pages, live progress | working | `lib/` |
+| Themes: System / Light / Dark and Violet / Teal / Rose / Ocean accents, persisted locally | working | `lib/theme_controller.dart` |
 | CLI: `upload`, `creds add/list/set/remove`, `version` | working | `rust/src/bin/cli.rs` |
 | Live Photo pairing + `CreateMediaItems` linked-item commit | **not ported** | see "Gaps" |
 | Token binding (ADB alias read, Tink hybrid decrypt, ECDSA assertion JWT) | **not ported** | see "Gaps" |
@@ -40,6 +42,13 @@ rust/proto/                Wire schemas copied from reference client
 rust/build.rs              prost-build
 rust_builder/              cargokit build glue (generated)
 ```
+
+## Interface
+
+- **Sidebar** — Upload, Settings, Accounts, About. Collapses to a bottom bar on narrow windows.
+- **Settings bar** — Appearance / Upload / Advanced tabs on the Settings page.
+- **Themes** — cycle with the sun icon in the app bar, or pick mode and accent under Settings → Appearance. Choices survive restarts via `shared_preferences`.
+- **Minimal upload screen** — drop zone, queue chips, album field, compact counters and an activity panel that only appears once a run starts.
 
 ## Build
 
