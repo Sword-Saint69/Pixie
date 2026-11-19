@@ -53,6 +53,7 @@ flutter_rust_bridge_codegen generate   # after editing rust/src/api
 cargo test --manifest-path rust/Cargo.toml
 flutter test integration_test -d linux
 flutter build linux --release
+flutter build apk --release
 cargo build --release --manifest-path rust/Cargo.toml --bin gotohp-rs-cli
 ```
 
@@ -102,13 +103,17 @@ vice versa, because the file layout and query-string format are identical.
 2. **Token binding.** Port the ADB alias extraction (`configmanager.go`) and
    the Tink hybrid / ECDSA assertion JWT (`tokenbinding.go`); Rust needs
    `tink-crypto` equivalents or a direct implementation of the hybrid scheme.
-3. **Live-target verification.** No Google account was available in this
-   session, so no request was sent to Google. Endpoint/header correctness is
+3. **Live-target verification.** No Google account or Android device/emulator
+   was available in this session, so no request was sent to Google and the APK
+   was not launched. Endpoint/header correctness is
    derived from the reference source, not from an observed successful upload.
 
 ## Status
 
 Rust unit tests: 10 passed. Flutter integration tests on Linux: 2 passed.
-`flutter analyze`: no issues. `flutter build linux --release`: succeeded.
+`flutter analyze`: no issues. `flutter build linux --release` and
+`flutter build apk --release`: both succeeded; the APK (65.2 MB) contains
+`libgotohp_core.so` for arm64-v8a, armeabi-v7a and x86_64. Gradle emits a
+non-fatal warning that `desktop_drop` still applies the Kotlin Gradle Plugin.
 CLI smoke tests for `version`, `creds add/list` against a temporary config:
 succeeded.
