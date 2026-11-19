@@ -1,9 +1,26 @@
 import 'package:gotohp_rs/brand.dart';
 import 'package:gotohp_rs/design.dart';
+import 'package:gotohp_rs/src/rust/api.dart';
+import 'package:gotohp_rs/src/rust/api/app_types.dart';
 import 'package:material_ui/material_ui.dart';
 
-class AboutPage extends StatelessWidget {
+class AboutPage extends StatefulWidget {
   const AboutPage({super.key});
+
+  @override
+  State<AboutPage> createState() => _AboutState();
+}
+
+class _AboutState extends State<AboutPage> {
+  CoreInfo? _info;
+
+  @override
+  void initState() {
+    super.initState();
+    coreInfo().then((info) {
+      if (mounted) setState(() => _info = info);
+    }).catchError((_) {});
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -15,7 +32,7 @@ class AboutPage extends StatelessWidget {
           constraints: const BoxConstraints(maxWidth: 620),
           child: Column(
             children: [
-              const SizedBox(height: 30),
+              const SizedBox(height: 26),
               Container(
                 width: 104,
                 height: 104,
@@ -25,27 +42,40 @@ class AboutPage extends StatelessWidget {
                 ),
                 child: const PixieLogo(size: 92),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 18),
               Text('Pixie', style: TextStyle(fontSize: 28, fontWeight: FontWeight.w800, color: cs.onSurface)),
               const SizedBox(height: 4),
-              Text('Photo cloud uploader · Rust core', style: TextStyle(fontSize: 13, color: cs.onSurfaceVariant)),
-              const SizedBox(height: 28),
+              Text('Photo cloud uploader · Rust core',
+                  style: TextStyle(fontSize: 13, color: cs.onSurfaceVariant)),
+              const SizedBox(height: 26),
               PixieCard(
                 child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('Built with Flutter and Rust', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: cs.onSurface)),
-                      const SizedBox(height: 8),
-                      Text(
-                        'The upload pipeline, authentication and protobuf protocol are implemented in Rust and shared by this app and the gotohp-rs CLI. The interface is Flutter.',
-                        style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant, height: 1.5),
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const MicroLabel('Rust core'),
+                    const SizedBox(height: 12),
+                    Text('Built with Flutter and Rust',
+                        style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: cs.onSurface)),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Authentication, protobuf protocol, hashing, the upload worker pool and progress accounting all run in Rust and are shared with the gotohp-rs CLI.',
+                      style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant, height: 1.5),
+                    ),
+                    const SizedBox(height: 16),
+                    Divider(color: cs.outlineVariant.withValues(alpha: 0.4)),
+                    const SizedBox(height: 12),
+                    if (_info == null)
+                      const SizedBox(height: 48, child: Center(child: CircularProgressIndicator()))
+                    else
+                      Column(
+                        children: [
+                          _row('Version', _info!.crateVersion, cs),
+                          _row('Bridge', _info!.bridgeVersion, cs),
+                          _row('Target', _info!.target, cs),
+                          _row('Features', _info!.features, cs),
+                        ],
                       ),
-                      const SizedBox(height: 14),
-                      Text(
-                        'Version 0.1.0 · flutter_rust_bridge 2.13.0',
-                        style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant),
-                      ),
-                    ],
+                  ],
                 ),
               ),
             ],
@@ -54,4 +84,20 @@ class AboutPage extends StatelessWidget {
       ),
     );
   }
+
+  Widget _row(String label, String value, ColorScheme cs) => Padding(
+        padding: const EdgeInsets.symmetric(vertical: 7),
+        child: Row(
+          children: [
+            MicroLabel(label),
+            const Spacer(),
+            Flexible(
+              child: Text(value,
+                  textAlign: TextAlign.right,
+                  style: TextStyle(fontSize: 12, color: cs.onSurface),
+                  overflow: TextOverflow.ellipsis),
+            ),
+          ],
+        ),
+      );
 }

@@ -8,8 +8,9 @@ use chrono::{Datelike, Local, NaiveDateTime, TimeZone};
 use sha1::Digest;
 use std::collections::{HashMap, VecDeque};
 use std::path::{Path, PathBuf};
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicI64, Ordering};
 use std::sync::Arc;
+use std::time::Instant;
 use std::sync::Mutex;
 use tokio::sync::RwLock;
 
@@ -89,11 +90,29 @@ impl UploadOptions {
     }
 }
 
+#[derive(Debug, Clone, Default)]
+pub struct CoreUploadProgress {
+    pub total_bytes: i64,
+    pub uploaded_bytes: i64,
+    pub elapsed_ms: i64,
+    pub speed_bytes_per_sec: i64,
+    pub eta_seconds: i64,
+}
+
+#[derive(Debug, Clone, Default)]
+pub struct CoreFilePreview {
+    pub path: String,
+    pub size_bytes: i64,
+}
+
 pub struct UploadState {
     pub events: Mutex<VecDeque<CoreUploadEvent>>,
     pub summary: RwLock<CoreSummary>,
     pub cancel: Mutex<Option<tokio_util::sync::CancellationToken>>,
     pub running: AtomicBool,
+    started_at: Mutex<Option<Instant>>,
+    total_bytes: AtomicI64,
+    uploaded_bytes: AtomicI64,
 }
 
 impl Default for UploadState {
@@ -103,6 +122,9 @@ impl Default for UploadState {
             summary: RwLock::new(CoreSummary::default()),
             cancel: Mutex::new(None),
             running: AtomicBool::new(false),
+            started_at: Mutex::new(None),
+            total_bytes: AtomicI64::new(0),
+            uploaded_bytes: AtomicI64::new(0),
         }
     }
 }
@@ -127,6 +149,48 @@ impl UploadState {
 
     pub fn summary(&self) -> CoreSummary {
         self.summary.blocking_read().clone()
+    }
+
+    pub fn progress(&self) -> CoreUploadProgress {
+        let total = self.total_bytes.load(Ordering::Acquire).max(0);
+        let uploaded = self.uploaded_bytes.load(Ordering::Acquire).max(0);
+        let elapsed_ms = self
+            .started_at
+            .lock()
+            .expect("start lock poisoned")
+            .map(|start| start.elapsed().as_millis() as i64)
+            .unwrap_or(0);
+        let speed = if elapsed_ms > 200 {
+            uploaded.saturating_mul(1000) / elapsed_ms
+        } else {
+            0
+        };
+        let eta = if speed > 0 && total > uploaded {
+            (total - uploaded) / speed
+        } else {
+            -1
+        };
+        CoreUploadProgress {
+            total_bytes: total,
+            uploaded_bytes: uploaded,
+            elapsed_ms,
+            speed_bytes_per_sec: speed,
+            eta_seconds: eta,
+        }
+    }
+
+    pub fn reset_progress(&self) {
+        *self.started_at.lock().expect("start lock poisoned") = Some(Instant::now());
+        self.total_bytes.store(0, Ordering::Release);
+        self.uploaded_bytes.store(0, Ordering::Release);
+    }
+
+    pub fn set_total_bytes(&self, bytes: i64) {
+        self.total_bytes.store(bytes.max(0), Ordering::Release);
+    }
+
+    pub fn add_uploaded_bytes(&self, bytes: i64) {
+        self.uploaded_bytes.fetch_add(bytes.max(0), Ordering::AcqRel);
     }
 
     pub fn is_running(&self) -> bool {
@@ -162,6 +226,7 @@ pub fn start_upload(
     let token = tokio_util::sync::CancellationToken::new();
     *state.cancel.lock().expect("cancel lock poisoned") = Some(token.clone());
     *state.summary.blocking_write() = CoreSummary::default();
+    state.reset_progress();
     state.events.lock().expect("event lock poisoned").clear();
     state.running.store(true, Ordering::Release);
 
@@ -196,6 +261,8 @@ async fn run_upload(
         ..Default::default()
     });
     let files = discover_files(&paths, &options)?;
+    let total_bytes: i64 = files.iter().filter_map(|p| std::fs::metadata(p).ok()).map(|m| m.len() as i64).sum();
+    state.set_total_bytes(total_bytes);
     state.emit_sync(CoreUploadEvent {
         event_type: "start".into(),
         total: files.len() as i32,
@@ -256,6 +323,10 @@ async fn run_upload(
             if !result.media_key.is_empty() {
                 successful.insert(result.path.clone(), result.media_key.clone());
             }
+        }
+        if !result.is_error {
+            let bytes = std::fs::metadata(&result.path).map(|m| m.len() as i64).unwrap_or(0);
+            state.add_uploaded_bytes(bytes);
         }
         summary.results.push(result.clone());
         state.emit_sync(CoreUploadEvent {

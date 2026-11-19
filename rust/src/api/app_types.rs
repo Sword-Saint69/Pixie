@@ -147,3 +147,35 @@ impl From<CoreSummary> for UploadSummary {
         }
     }
 }
+
+pub struct CoreInfo {
+    pub crate_version: String,
+    pub bridge_version: String,
+    pub target: String,
+    pub features: String,
+}
+
+pub struct FilePreview {
+    pub path: String,
+    pub size_bytes: i64,
+}
+
+pub struct UploadProgress {
+    pub total_bytes: i64,
+    pub uploaded_bytes: i64,
+    pub elapsed_ms: i64,
+    pub speed_bytes_per_sec: i64,
+    pub eta_seconds: i64,
+}
+
+impl From<crate::core::upload::CoreUploadProgress> for UploadProgress {
+    fn from(p: crate::core::upload::CoreUploadProgress) -> Self {
+        Self {
+            total_bytes: p.total_bytes,
+            uploaded_bytes: p.uploaded_bytes,
+            elapsed_ms: p.elapsed_ms,
+            speed_bytes_per_sec: p.speed_bytes_per_sec,
+            eta_seconds: p.eta_seconds,
+        }
+    }
+}

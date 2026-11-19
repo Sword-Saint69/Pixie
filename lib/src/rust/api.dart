@@ -72,3 +72,16 @@ Future<List<UploadEvent>> drainEvents() =>
     RustLib.instance.api.crateApiDrainEvents();
 
 Future<UploadSummary> getSummary() => RustLib.instance.api.crateApiGetSummary();
+
+Future<CoreInfo> coreInfo() => RustLib.instance.api.crateApiCoreInfo();
+
+Future<List<FilePreview>> previewFilesDetailed({
+  required List<String> paths,
+  required AppSettings settings,
+}) => RustLib.instance.api.crateApiPreviewFilesDetailed(
+  paths: paths,
+  settings: settings,
+);
+
+Future<UploadProgress> getProgress() =>
+    RustLib.instance.api.crateApiGetProgress();

@@ -160,3 +160,45 @@ pub fn drain_events() -> Vec<UploadEvent> {
 pub fn get_summary() -> UploadSummary {
     upload_state().summary().into()
 }
+
+pub fn core_info() -> CoreInfo {
+    CoreInfo {
+        crate_version: env!("CARGO_PKG_VERSION").to_string(),
+        bridge_version: "2.13.0".to_string(),
+        target: format!("{}-{}", std::env::consts::OS, std::env::consts::ARCH),
+        features: "tokio, reqwest/rustls, prost, cargokit".to_string(),
+    }
+}
+
+pub fn preview_files_detailed(
+    paths: Vec<String>,
+    settings: AppSettings,
+) -> anyhow::Result<Vec<FilePreview>> {
+    let prefs = settings.into_core();
+    let options = crate::core::upload::UploadOptions {
+        credential: config_store().credential_for("")?,
+        proxy: prefs.proxy.clone(),
+        saver: prefs.saver,
+        use_quota: prefs.use_quota,
+        recursive: prefs.recursive,
+        exclude_pattern: prefs.exclude_pattern.clone(),
+        threads: prefs.upload_threads.max(1) as usize,
+        force_upload: prefs.force_upload,
+        delete_from_host: prefs.delete_from_host,
+        disable_unsupported_files_filter: prefs.disable_unsupported_files_filter,
+        set_date_from_filename: prefs.set_date_from_filename,
+        album_name: String::new(),
+        album_auto: false,
+    };
+    Ok(crate::core::upload::discover_files(&paths, &options)?
+        .into_iter()
+        .map(|path| FilePreview {
+            size_bytes: std::fs::metadata(&path).map(|m| m.len() as i64).unwrap_or(0),
+            path: path.display().to_string(),
+        })
+        .collect())
+}
+
+pub fn get_progress() -> UploadProgress {
+    upload_state().progress().into()
+}

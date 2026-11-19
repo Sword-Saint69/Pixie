@@ -8,7 +8,7 @@ import '../frb_generated.dart';
 
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
-// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `from`, `from`, `from`, `from`
+// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `from`, `from`, `from`, `from`, `from`
 
 class AccountInfo {
   final String email;
@@ -99,6 +99,55 @@ class AppSettings {
           excludePattern == other.excludePattern;
 }
 
+class CoreInfo {
+  final String crateVersion;
+  final String bridgeVersion;
+  final String target;
+  final String features;
+
+  const CoreInfo({
+    required this.crateVersion,
+    required this.bridgeVersion,
+    required this.target,
+    required this.features,
+  });
+
+  @override
+  int get hashCode =>
+      crateVersion.hashCode ^
+      bridgeVersion.hashCode ^
+      target.hashCode ^
+      features.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is CoreInfo &&
+          runtimeType == other.runtimeType &&
+          crateVersion == other.crateVersion &&
+          bridgeVersion == other.bridgeVersion &&
+          target == other.target &&
+          features == other.features;
+}
+
+class FilePreview {
+  final String path;
+  final PlatformInt64 sizeBytes;
+
+  const FilePreview({required this.path, required this.sizeBytes});
+
+  @override
+  int get hashCode => path.hashCode ^ sizeBytes.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is FilePreview &&
+          runtimeType == other.runtimeType &&
+          path == other.path &&
+          sizeBytes == other.sizeBytes;
+}
+
 class UploadEvent {
   final String eventType;
   final int workerId;
@@ -172,6 +221,41 @@ class UploadEvent {
           skipped == other.skipped &&
           skipCode == other.skipCode &&
           skipReason == other.skipReason;
+}
+
+class UploadProgress {
+  final PlatformInt64 totalBytes;
+  final PlatformInt64 uploadedBytes;
+  final PlatformInt64 elapsedMs;
+  final PlatformInt64 speedBytesPerSec;
+  final PlatformInt64 etaSeconds;
+
+  const UploadProgress({
+    required this.totalBytes,
+    required this.uploadedBytes,
+    required this.elapsedMs,
+    required this.speedBytesPerSec,
+    required this.etaSeconds,
+  });
+
+  @override
+  int get hashCode =>
+      totalBytes.hashCode ^
+      uploadedBytes.hashCode ^
+      elapsedMs.hashCode ^
+      speedBytesPerSec.hashCode ^
+      etaSeconds.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is UploadProgress &&
+          runtimeType == other.runtimeType &&
+          totalBytes == other.totalBytes &&
+          uploadedBytes == other.uploadedBytes &&
+          elapsedMs == other.elapsedMs &&
+          speedBytesPerSec == other.speedBytesPerSec &&
+          etaSeconds == other.etaSeconds;
 }
 
 class UploadResult {

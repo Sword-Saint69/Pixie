@@ -63,6 +63,8 @@ with an action.
 - **Minimal upload screen** — drop zone, queue chips, album field, compact counters and an activity panel that only appears once a run starts.
 - **Preflight** — the queue is measured before upload (file count + total bytes), with size/speed/ETA during a run.
 - **Queue persistence** — paths, album name and AUTO mode survive restarts via `shared_preferences`.
+- **Rust-owned telemetry** — preflight file sizing, progress totals, elapsed time, speed and ETA are computed in `rust/src/core/upload.rs` and exposed through `previewFilesDetailed()`, `getProgress()` and `coreInfo()`. The About page reads the live crate version, bridge version and target from Rust.
+- **Dark theme** — layered near-black surfaces, lighter accent, brighter semantic green/amber/red and softer outlines for contrast.
 - **Motion** — animated page transitions, drop-zone hover scale, expanding progress/activity panels and theme-change snackbars.
 - **Keyboard** — Ctrl+U starts an upload, Ctrl+, opens settings.
 - **Album AUTO** toggle on the upload screen; real per-worker IDs in Activity (fixed in the Rust pool).

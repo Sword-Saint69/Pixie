@@ -42,6 +42,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   AppSettings dco_decode_box_autoadd_app_settings(dynamic raw);
 
   @protected
+  CoreInfo dco_decode_core_info(dynamic raw);
+
+  @protected
+  FilePreview dco_decode_file_preview(dynamic raw);
+
+  @protected
   int dco_decode_i_32(dynamic raw);
 
   @protected
@@ -52,6 +58,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   List<AccountInfo> dco_decode_list_account_info(dynamic raw);
+
+  @protected
+  List<FilePreview> dco_decode_list_file_preview(dynamic raw);
 
   @protected
   Uint8List dco_decode_list_prim_u_8_strict(dynamic raw);
@@ -73,6 +82,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   UploadEvent dco_decode_upload_event(dynamic raw);
+
+  @protected
+  UploadProgress dco_decode_upload_progress(dynamic raw);
 
   @protected
   UploadResult dco_decode_upload_result(dynamic raw);
@@ -99,6 +111,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   AppSettings sse_decode_box_autoadd_app_settings(SseDeserializer deserializer);
 
   @protected
+  CoreInfo sse_decode_core_info(SseDeserializer deserializer);
+
+  @protected
+  FilePreview sse_decode_file_preview(SseDeserializer deserializer);
+
+  @protected
   int sse_decode_i_32(SseDeserializer deserializer);
 
   @protected
@@ -109,6 +127,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   List<AccountInfo> sse_decode_list_account_info(SseDeserializer deserializer);
+
+  @protected
+  List<FilePreview> sse_decode_list_file_preview(SseDeserializer deserializer);
 
   @protected
   Uint8List sse_decode_list_prim_u_8_strict(SseDeserializer deserializer);
@@ -132,6 +153,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   UploadEvent sse_decode_upload_event(SseDeserializer deserializer);
+
+  @protected
+  UploadProgress sse_decode_upload_progress(SseDeserializer deserializer);
 
   @protected
   UploadResult sse_decode_upload_result(SseDeserializer deserializer);
@@ -164,6 +188,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  void sse_encode_core_info(CoreInfo self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_file_preview(FilePreview self, SseSerializer serializer);
+
+  @protected
   void sse_encode_i_32(int self, SseSerializer serializer);
 
   @protected
@@ -175,6 +205,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   @protected
   void sse_encode_list_account_info(
     List<AccountInfo> self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_list_file_preview(
+    List<FilePreview> self,
     SseSerializer serializer,
   );
 
@@ -207,6 +243,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   void sse_encode_upload_event(UploadEvent self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_upload_progress(
+    UploadProgress self,
+    SseSerializer serializer,
+  );
 
   @protected
   void sse_encode_upload_result(UploadResult self, SseSerializer serializer);

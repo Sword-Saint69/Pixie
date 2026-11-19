@@ -3,6 +3,18 @@ import 'package:material_ui/material_ui.dart';
 /// Shared visual language taken from the inspo folder: editorial cards,
 /// oversized figures, micro-labels, status segments and dot matrices.
 
+Color successColor(BuildContext context) => Theme.of(context).brightness == Brightness.dark
+    ? const Color(0xFF4ADE80)
+    : const Color(0xFF16A34A);
+
+Color warningColor(BuildContext context) => Theme.of(context).brightness == Brightness.dark
+    ? const Color(0xFFFBBF24)
+    : const Color(0xFFD97706);
+
+Color dangerColor(BuildContext context) => Theme.of(context).brightness == Brightness.dark
+    ? const Color(0xFFF87171)
+    : const Color(0xFFDC2626);
+
 class PixieCard extends StatelessWidget {
   const PixieCard({super.key, required this.child, this.padding = 20});
 
@@ -135,9 +147,9 @@ class StatusBar extends StatelessWidget {
     final cs = Theme.of(context).colorScheme;
     final total = done + skipped + failed;
     final segments = <(int, Color)>[
-      (done, Colors.green.shade600),
-      (skipped, Colors.amber.shade600),
-      (failed, cs.error),
+      (done, successColor(context)),
+      (skipped, warningColor(context)),
+      (failed, dangerColor(context)),
     ];
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -162,9 +174,9 @@ class StatusBar extends StatelessWidget {
         const SizedBox(height: 10),
         Row(
           children: [
-            _legend('Uploaded', done, total, Colors.green.shade600, cs),
-            _legend('Skipped', skipped, total, Colors.amber.shade600, cs),
-            _legend('Failed', failed, total, cs.error, cs),
+            _legend('Uploaded', done, total, successColor(context), cs),
+            _legend('Skipped', skipped, total, warningColor(context), cs),
+            _legend('Failed', failed, total, dangerColor(context), cs),
           ],
         ),
       ],
@@ -212,9 +224,9 @@ class DotMatrix extends StatelessWidget {
             height: 10,
             decoration: BoxDecoration(
               color: switch (state) {
-                1 => Colors.green.shade500,
-                2 => Colors.amber.shade500,
-                3 => cs.error,
+                1 => successColor(context),
+                2 => warningColor(context),
+                3 => dangerColor(context),
                 _ => cs.surfaceContainerHighest,
               },
               borderRadius: BorderRadius.circular(3),

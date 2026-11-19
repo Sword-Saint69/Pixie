@@ -72,50 +72,78 @@ class ThemeController extends ChangeNotifier {
   ThemeData darkTheme() => _theme(Brightness.dark);
 
   ThemeData _theme(Brightness brightness) {
-    final scheme = ColorScheme.fromSeed(seedColor: accentColor, brightness: brightness);
     final dark = brightness == Brightness.dark;
+    final base = ColorScheme.fromSeed(seedColor: accentColor, brightness: brightness);
+    final scheme = dark
+        ? base.copyWith(
+            primary: Color.lerp(accentColor, Colors.white, 0.38)!,
+            surface: const Color(0xFF151A1E),
+            surfaceContainerLowest: const Color(0xFF0D1114),
+            surfaceContainerLow: const Color(0xFF11171B),
+            surfaceContainer: const Color(0xFF1A2025),
+            surfaceContainerHigh: const Color(0xFF212830),
+            surfaceContainerHighest: const Color(0xFF29323A),
+            outline: const Color(0xFF3B474F),
+            outlineVariant: const Color(0xFF2B343B),
+            onSurface: const Color(0xFFE9EEF1),
+            onSurfaceVariant: const Color(0xFF9AA9B1),
+          )
+        : base;
+
     return ThemeData(
       useMaterial3: true,
       colorScheme: scheme,
-      scaffoldBackgroundColor: dark ? const Color(0xFF111417) : const Color(0xFFF4F6F8),
+      scaffoldBackgroundColor: dark ? const Color(0xFF0C1013) : const Color(0xFFF4F6F8),
       appBarTheme: AppBarTheme(
         elevation: 0,
         scrolledUnderElevation: 0,
-        backgroundColor: dark ? const Color(0xFF171B1F) : Colors.white,
+        backgroundColor: dark ? const Color(0xFF11161A) : Colors.white,
         surfaceTintColor: Colors.transparent,
         foregroundColor: scheme.onSurface,
       ),
       cardTheme: CardThemeData(
         elevation: 0,
-        color: dark ? const Color(0xFF1A1F24) : Colors.white,
+        color: dark ? const Color(0xFF191F24) : Colors.white,
         surfaceTintColor: Colors.transparent,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
-          side: BorderSide(color: dark ? Colors.white12 : Colors.grey.shade200),
+          side: BorderSide(color: dark ? const Color(0xFF2B343B) : Colors.grey.shade200),
         ),
       ),
+      dividerTheme: DividerThemeData(
+        color: dark ? const Color(0xFF2B343B) : Colors.grey.shade200,
+        space: 1,
+        thickness: 1,
+      ),
       navigationRailTheme: NavigationRailThemeData(
-        backgroundColor: dark ? const Color(0xFF171B1F) : Colors.white,
+        backgroundColor: dark ? const Color(0xFF11161A) : Colors.white,
         selectedIconTheme: IconThemeData(color: scheme.primary),
         selectedLabelTextStyle: TextStyle(color: scheme.primary, fontWeight: FontWeight.w600),
       ),
       navigationBarTheme: NavigationBarThemeData(
-        backgroundColor: dark ? const Color(0xFF171B1F) : Colors.white,
-        indicatorColor: scheme.primary.withValues(alpha: 0.15),
+        backgroundColor: dark ? const Color(0xFF11161A) : Colors.white,
+        indicatorColor: scheme.primary.withValues(alpha: 0.16),
       ),
       sliderTheme: SliderThemeData(activeTrackColor: scheme.primary, thumbColor: scheme.primary),
+      snackBarTheme: SnackBarThemeData(
+        backgroundColor: const Color(0xFF14181B),
+        contentTextStyle: const TextStyle(color: Colors.white),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: dark ? const Color(0xFF20262C) : const Color(0xFFF4F6F8),
+        fillColor: dark ? const Color(0xFF1B2228) : const Color(0xFFF4F6F8),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
-          borderSide: BorderSide(color: dark ? Colors.white12 : Colors.grey.shade300),
+          borderSide: BorderSide(color: dark ? const Color(0xFF334048) : Colors.grey.shade300),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
-          borderSide: BorderSide(color: dark ? Colors.white12 : Colors.grey.shade300),
+          borderSide: BorderSide(color: dark ? const Color(0xFF334048) : Colors.grey.shade300),
         ),
       ),
     );
   }
+
 }

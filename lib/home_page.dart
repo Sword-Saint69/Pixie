@@ -45,9 +45,13 @@ class _HomePageState extends State<HomePage> {
   int _preflightBytes = 0;
   bool _preflighting = false;
   Timer? _preflightTimer;
-  DateTime? _runStart;
-  double _etaSeconds = -1;
-  double _speedBytes = 0;
+  UploadProgress _progress = const UploadProgress(
+    totalBytes: 0,
+    uploadedBytes: 0,
+    elapsedMs: 0,
+    speedBytesPerSec: 0,
+    etaSeconds: -1,
+  );
 
   bool _running = false;
   bool _dragOver = false;
@@ -112,13 +116,8 @@ class _HomePageState extends State<HomePage> {
     }
     setState(() => _preflighting = true);
     try {
-      final files = await previewFiles(paths: _paths, settings: settings);
-      var bytes = 0;
-      for (final path in files) {
-        try {
-          bytes += await File(path).length();
-        } catch (_) {}
-      }
+      final files = await previewFilesDetailed(paths: _paths, settings: settings);
+      final bytes = files.fold<int>(0, (sum, f) => sum + f.sizeBytes);
       if (!mounted) return;
       setState(() {
         _preflightCount = files.length;
@@ -134,11 +133,13 @@ class _HomePageState extends State<HomePage> {
     try {
       final events = await drainEvents();
       final running = await isUploadRunning();
+      final progress = await getProgress();
       if (!mounted) return;
       final wasRunning = _running;
       var summaryChanged = false;
       setState(() {
         _running = running;
+        _progress = progress;
         for (final event in events) {
           switch (event.eventType) {
             case 'thread':
@@ -158,14 +159,12 @@ class _HomePageState extends State<HomePage> {
               if (event.total > 0) {
                 _results.clear();
                 _threadStates.clear();
-                _runStart = DateTime.now();
               }
             case 'fatal':
               _error = _friendly(event.message);
           }
         }
         _threadStates.sort((a, b) => a.workerId.compareTo(b.workerId));
-        _computeSpeed();
       });
       if (!running) {
         final fresh = await getSummary();
@@ -179,21 +178,6 @@ class _HomePageState extends State<HomePage> {
         _showCompletion();
       }
     } catch (_) {}
-  }
-
-  void _computeSpeed() {
-    final start = _runStart;
-    if (!_running || start == null) {
-      _speedBytes = 0;
-      _etaSeconds = -1;
-      return;
-    }
-    final uploaded = _threadStates.fold<int>(0, (sum, e) => sum + e.bytesUploaded);
-    final seconds = DateTime.now().difference(start).inMilliseconds / 1000;
-    if (seconds <= 0.2) return;
-    _speedBytes = uploaded / seconds;
-    final remaining = _preflightBytes - uploaded;
-    _etaSeconds = _speedBytes > 0 && remaining > 0 ? remaining / _speedBytes : -1;
   }
 
   void _showCompletion() {
@@ -266,7 +250,6 @@ class _HomePageState extends State<HomePage> {
       _results.clear();
       _threadStates.clear();
       _running = true;
-      _runStart = DateTime.now();
     });
     try {
       await startUpload(
@@ -382,13 +365,13 @@ class _HomePageState extends State<HomePage> {
                   icon: Icons.folder_open_outlined, color: cs.primary, count: _preflightCount),
               const SizedBox(width: 10),
               StatCard(label: 'Uploaded', value: '${_summary.succeeded}',
-                  icon: Icons.check_circle_outline, color: Colors.green.shade600, count: _summary.succeeded),
+                  icon: Icons.check_circle_outline, color: successColor(context), count: _summary.succeeded),
               const SizedBox(width: 10),
               StatCard(label: 'Skipped', value: '${_summary.skipped}',
-                  icon: Icons.remove_circle_outline, color: Colors.amber.shade600, count: _summary.skipped),
+                  icon: Icons.remove_circle_outline, color: warningColor(context), count: _summary.skipped),
               const SizedBox(width: 10),
               StatCard(label: 'Failed', value: '${_summary.failed}',
-                  icon: Icons.error_outline, color: cs.error, count: _summary.failed),
+                  icon: Icons.error_outline, color: dangerColor(context), count: _summary.failed),
             ],
           ),
         ],
@@ -567,8 +550,8 @@ class _HomePageState extends State<HomePage> {
       );
 
   Widget _overallProgress(ColorScheme cs) {
-    final uploaded = _threadStates.fold<int>(0, (sum, e) => sum + e.bytesUploaded);
-    final total = _preflightBytes > 0 ? _preflightBytes : _summary.total;
+    final total = _progress.totalBytes > 0 ? _progress.totalBytes : _preflightBytes;
+    final uploaded = _progress.uploadedBytes;
     final progress = total > 0 ? (uploaded / total).clamp(0.0, 1.0) : null;
     return Padding(
       padding: const EdgeInsets.only(top: 18),
@@ -618,8 +601,8 @@ class _HomePageState extends State<HomePage> {
               const SizedBox(height: 8),
               Text(
                 '${_formatBytes(uploaded)} / ${_formatBytes(total)}'
-                '${_speedBytes > 0 ? ' · ${_formatBytes(_speedBytes.round())}/s' : ''}'
-                '${_etaSeconds > 0 ? ' · ${_etaSeconds.round()}s left' : ''}',
+                '${_progress.speedBytesPerSec > 0 ? ' · ${_formatBytes(_progress.speedBytesPerSec)}/s' : ''}'
+                '${_progress.etaSeconds > 0 ? ' · ${_progress.etaSeconds}s left' : ''}',
                 style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant),
               ),
             ],
@@ -749,7 +732,7 @@ class _HomePageState extends State<HomePage> {
             itemCount: _filteredResults.length,
             itemBuilder: (context, i) {
               final r = _filteredResults[i];
-              final color = r.isError ? cs.error : r.skipped ? Colors.orange.shade700 : Colors.green.shade700;
+              final color = r.isError ? dangerColor(context) : r.skipped ? warningColor(context) : successColor(context);
               final icon = r.isError ? Icons.error_outline : r.skipped ? Icons.remove_circle_outline : Icons.check_circle_outline;
               return Padding(padding: const EdgeInsets.symmetric(vertical: 5), child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
