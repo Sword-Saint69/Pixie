@@ -2,8 +2,9 @@ import 'dart:async';
 
 import 'package:material_ui/material_ui.dart';
 import 'package:gotohp_rs/about_page.dart';
-import 'package:gotohp_rs/brand.dart';
 import 'package:gotohp_rs/accounts_page.dart';
+import 'package:gotohp_rs/brand.dart';
+import 'package:gotohp_rs/design.dart';
 import 'package:gotohp_rs/home_page.dart';
 import 'package:gotohp_rs/settings_page.dart';
 import 'package:gotohp_rs/src/rust/api.dart';
@@ -47,7 +48,7 @@ class _AppShellState extends State<AppShell> {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    final wide = MediaQuery.sizeOf(context).width >= 700;
+    final wide = MediaQuery.sizeOf(context).width >= 640;
     final pages = <Widget>[
       HomePage(onOpenSettings: () => _go(1)),
       SettingsPage(theme: widget.theme),
@@ -66,21 +67,17 @@ class _AppShellState extends State<AppShell> {
 
     final appBar = AppBar(
       leading: wide ? null : const PixieLogo(size: 26),
-      title: Text(
-        _titles[_index],
-        style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 18),
-      ),
+      title: Text(_titles[_index],
+          style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 18)),
       actions: [
         _statusPill(cs),
         IconButton(
           tooltip: 'Cycle theme mode',
-          icon: Icon(
-            switch (widget.theme.mode) {
-              PixieThemeMode.system => Icons.brightness_auto_outlined,
-              PixieThemeMode.light => Icons.light_mode_outlined,
-              PixieThemeMode.dark => Icons.dark_mode_outlined,
-            },
-          ),
+          icon: Icon(switch (widget.theme.mode) {
+            PixieThemeMode.system => Icons.brightness_auto_outlined,
+            PixieThemeMode.light => Icons.light_mode_outlined,
+            PixieThemeMode.dark => Icons.dark_mode_outlined,
+          }),
           onPressed: () {
             final next = switch (widget.theme.mode) {
               PixieThemeMode.system => PixieThemeMode.light,
@@ -88,17 +85,14 @@ class _AppShellState extends State<AppShell> {
               PixieThemeMode.dark => PixieThemeMode.system,
             };
             widget.theme.setMode(next);
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('Theme: ${switch (next) {
-                  PixieThemeMode.system => 'System',
-                  PixieThemeMode.light => 'Light',
-                  PixieThemeMode.dark => 'Dark',
-                }}'),
-                duration: const Duration(seconds: 1),
-                behavior: SnackBarBehavior.floating,
-              ),
-            );
+            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+              content: Text('Theme: ${switch (next) {
+                PixieThemeMode.system => 'System',
+                PixieThemeMode.light => 'Light',
+                PixieThemeMode.dark => 'Dark',
+              }}'),
+              behavior: SnackBarBehavior.floating,
+            ));
           },
         ),
         IconButton(
@@ -131,37 +125,12 @@ class _AppShellState extends State<AppShell> {
       appBar: appBar,
       body: Row(
         children: [
-          NavigationRail(
-            extended: MediaQuery.sizeOf(context).width >= 1100,
-            selectedIndex: _index,
-            onDestinationSelected: _go,
-            leading: Padding(
-              padding: const EdgeInsets.only(top: 16, bottom: 24),
-              child: Column(
-                children: [
-                  Container(
-                    width: 42,
-                    height: 42,
-                    decoration: BoxDecoration(
-                      color: cs.primary.withValues(alpha: 0.10),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const PixieLogo(size: 36),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Pixie',
-                    style: TextStyle(color: cs.primary, fontWeight: FontWeight.w800, fontSize: 13),
-                  ),
-                ],
-              ),
-            ),
-            destinations: const [
-              NavigationRailDestination(icon: Icon(Icons.cloud_upload_outlined), label: Text('Upload')),
-              NavigationRailDestination(icon: Icon(Icons.tune_rounded), label: Text('Settings')),
-              NavigationRailDestination(icon: Icon(Icons.account_circle_outlined), label: Text('Accounts')),
-              NavigationRailDestination(icon: Icon(Icons.info_outline), label: Text('About')),
-            ],
+          _Sidebar(
+            index: _index,
+            onSelect: _go,
+            dark: widget.theme.mode == PixieThemeMode.dark,
+            onDarkToggle: (value) => widget.theme
+                .setMode(value ? PixieThemeMode.dark : PixieThemeMode.light),
           ),
           VerticalDivider(width: 1, color: cs.outlineVariant.withValues(alpha: 0.4)),
           Expanded(child: active),
@@ -171,7 +140,7 @@ class _AppShellState extends State<AppShell> {
   }
 
   Widget _statusPill(ColorScheme cs) {
-    final color = _running ? Colors.orange.shade700 : Colors.green.shade700;
+    final color = _running ? Colors.amber.shade700 : Colors.green.shade700;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
@@ -183,11 +152,112 @@ class _AppShellState extends State<AppShell> {
         children: [
           Container(width: 7, height: 7, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
           const SizedBox(width: 8),
-          Text(
-            _running ? 'Uploading' : 'Ready',
-            style: TextStyle(color: color, fontWeight: FontWeight.w600, fontSize: 12),
-          ),
+          Text(_running ? 'Uploading' : 'Ready',
+              style: TextStyle(color: color, fontWeight: FontWeight.w600, fontSize: 12)),
         ],
+      ),
+    );
+  }
+}
+
+class _Sidebar extends StatelessWidget {
+  const _Sidebar({required this.index, required this.onSelect, required this.dark, required this.onDarkToggle});
+
+  final int index;
+  final ValueChanged<int> onSelect;
+  final bool dark;
+  final ValueChanged<bool> onDarkToggle;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return Container(
+      width: 224,
+      color: cs.surface,
+      padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            child: Row(
+              children: [
+                Container(
+                  width: 38,
+                  height: 38,
+                  decoration: BoxDecoration(
+                    color: cs.primary.withValues(alpha: 0.10),
+                    borderRadius: BorderRadius.circular(11),
+                  ),
+                  child: const PixieLogo(size: 32),
+                ),
+                const SizedBox(width: 10),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Pixie', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: cs.onSurface)),
+                    Text('photo cloud', style: TextStyle(fontSize: 10, color: cs.onSurfaceVariant)),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 28),
+          const Padding(padding: EdgeInsets.symmetric(horizontal: 12), child: MicroLabel('Workspace')),
+          const SizedBox(height: 8),
+          _tile(0, Icons.cloud_upload_outlined, 'Upload', cs),
+          _tile(2, Icons.account_circle_outlined, 'Accounts', cs),
+          const SizedBox(height: 20),
+          const Padding(padding: EdgeInsets.symmetric(horizontal: 12), child: MicroLabel('Tools')),
+          const SizedBox(height: 8),
+          _tile(1, Icons.tune_rounded, 'Settings', cs),
+          const Spacer(),
+          Divider(color: cs.outlineVariant.withValues(alpha: 0.4)),
+          SwitchListTile(
+            dense: true,
+            contentPadding: const EdgeInsets.symmetric(horizontal: 8),
+            secondary: Icon(dark ? Icons.dark_mode_outlined : Icons.light_mode_outlined,
+                size: 18, color: cs.onSurfaceVariant),
+            title: Text('Dark mode', style: TextStyle(fontSize: 12, color: cs.onSurface)),
+            value: dark,
+            onChanged: onDarkToggle,
+          ),
+          _tile(3, Icons.info_outline, 'About', cs),
+        ],
+      ),
+    );
+  }
+
+  Widget _tile(int value, IconData icon, String label, ColorScheme cs) {
+    final selected = index == value;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(11),
+          onTap: () => onSelect(value),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 160),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            decoration: BoxDecoration(
+              color: selected ? cs.primary.withValues(alpha: 0.11) : Colors.transparent,
+              borderRadius: BorderRadius.circular(11),
+            ),
+            child: Row(
+              children: [
+                Icon(icon, size: 18, color: selected ? cs.primary : cs.onSurfaceVariant),
+                const SizedBox(width: 12),
+                Text(label,
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                      color: selected ? cs.primary : cs.onSurface,
+                    )),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }

@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:desktop_drop/desktop_drop.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:gotohp_rs/brand.dart';
+import 'package:gotohp_rs/design.dart';
 import 'package:gotohp_rs/src/rust/api.dart';
 import 'package:gotohp_rs/src/rust/api/app_types.dart';
 import 'package:flutter/services.dart';
@@ -52,6 +53,7 @@ class _HomePageState extends State<HomePage> {
   bool _dragOver = false;
   String? _error;
   Timer? _poll;
+  int _activityFilter = 0; // 0 all, 1 uploaded, 2 skipped, 3 failed
 
   @override
   void initState() {
@@ -203,6 +205,7 @@ class _HomePageState extends State<HomePage> {
       content: Text('Upload finished · ${s.succeeded} uploaded, ${s.skipped} skipped, ${s.failed} failed'),
       backgroundColor: color,
       behavior: SnackBarBehavior.floating,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
     ));
   }
 
@@ -303,6 +306,8 @@ class _HomePageState extends State<HomePage> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     _header(cs),
+                    const SizedBox(height: 14),
+                    _statusStrip(cs),
                     const SizedBox(height: 22),
                     _dropZone(cs),
                     const SizedBox(height: 14),
@@ -342,31 +347,73 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _header(ColorScheme cs) => Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+  Widget _header(ColorScheme cs) => Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Send your photos to the cloud',
-                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: cs.onSurface)),
-                const SizedBox(height: 4),
-                Text('Drop files, choose a folder, and Pixie handles the rest.',
-                    style: TextStyle(fontSize: 13, color: cs.onSurfaceVariant)),
-              ],
-            ),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const MicroLabel('Session'),
+                    const SizedBox(height: 6),
+                    Text('Send your photos to the cloud',
+                        style: TextStyle(fontSize: 23, fontWeight: FontWeight.w700, color: cs.onSurface)),
+                    const SizedBox(height: 4),
+                    Text('Drop files, choose a folder, and Pixie handles the rest.',
+                        style: TextStyle(fontSize: 13, color: cs.onSurfaceVariant)),
+                  ],
+                ),
+              ),
+              PillSwitch<int>(
+                values: const [0, 1, 2],
+                labels: const ['All', 'Done', 'Failed'],
+                selected: _activityFilter,
+                onChanged: (v) => setState(() => _activityFilter = v),
+              ),
+            ],
           ),
+          const SizedBox(height: 18),
           Row(
             children: [
-              _chip('${_preflighting ? '…' : _preflightCount}', 'files', Icons.folder_open_outlined, cs.onSurface, cs),
-              const SizedBox(width: 8),
-              _chip('${_summary.succeeded}', 'done', Icons.check_circle_outline, Colors.green.shade700, cs),
-              const SizedBox(width: 8),
-              _chip('${_summary.failed}', 'failed', Icons.error_outline, cs.error, cs),
+              StatCard(label: 'Files queued', value: '$_preflightCount',
+                  icon: Icons.folder_open_outlined, color: cs.primary, count: _preflightCount),
+              const SizedBox(width: 10),
+              StatCard(label: 'Uploaded', value: '${_summary.succeeded}',
+                  icon: Icons.check_circle_outline, color: Colors.green.shade600, count: _summary.succeeded),
+              const SizedBox(width: 10),
+              StatCard(label: 'Skipped', value: '${_summary.skipped}',
+                  icon: Icons.remove_circle_outline, color: Colors.amber.shade600, count: _summary.skipped),
+              const SizedBox(width: 10),
+              StatCard(label: 'Failed', value: '${_summary.failed}',
+                  icon: Icons.error_outline, color: cs.error, count: _summary.failed),
             ],
           ),
         ],
+      );
+
+  Widget _statusStrip(ColorScheme cs) => PixieCard(
+        padding: 16,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              children: [
+                const MicroLabel('Workflow health'),
+                const Spacer(),
+                Text('this session', style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant)),
+              ],
+            ),
+            const SizedBox(height: 14),
+            StatusBar(
+              done: _summary.succeeded,
+              skipped: _summary.skipped,
+              failed: _summary.failed,
+            ),
+          ],
+        ),
       );
 
   Widget _dropZone(ColorScheme cs) => DropTarget(
@@ -405,11 +452,18 @@ class _HomePageState extends State<HomePage> {
                 style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: cs.onSurface),
               ),
               const SizedBox(height: 4),
-              if (_preflightCount > 0)
-                Text(
-                  '$_preflightCount file(s) · ${_formatBytes(_preflightBytes)} ready',
-                  style: TextStyle(fontSize: 12, color: cs.primary),
+              if (_preflighting)
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    SizedBox(width: 12, height: 12, child: CircularProgressIndicator(strokeWidth: 2, color: cs.primary)),
+                    const SizedBox(width: 8),
+                    Text('Measuring queue…', style: TextStyle(fontSize: 12, color: cs.primary)),
+                  ],
                 )
+              else if (_preflightCount > 0)
+                Text('$_preflightCount file(s) · ${_formatBytes(_preflightBytes)} ready',
+                    style: TextStyle(fontSize: 12, color: cs.primary))
               else
                 Text('or use the buttons below', style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant)),
             ],
@@ -530,13 +584,28 @@ class _HomePageState extends State<HomePage> {
                   const SizedBox(width: 8),
                   Text('Overall progress', style: TextStyle(fontWeight: FontWeight.w700, color: cs.onSurface)),
                   const Spacer(),
-                  Text(
-                    progress == null ? '' : '${(progress * 100).round()}%',
-                    style: TextStyle(fontWeight: FontWeight.w700, color: cs.primary),
+                  SizedBox(
+                    width: 38,
+                    height: 38,
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        CircularProgressIndicator(
+                          value: progress ?? 0,
+                          strokeWidth: 4,
+                          backgroundColor: cs.surfaceContainerHighest,
+                          color: cs.primary,
+                        ),
+                        Text(progress == null ? '' : '${(progress * 100).round()}',
+                            style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: cs.primary)),
+                      ],
+                    ),
                   ),
                 ],
               ),
               const SizedBox(height: 10),
+              _stageRow(cs),
+              const SizedBox(height: 12),
               ClipRRect(
                 borderRadius: BorderRadius.circular(8),
                 child: LinearProgressIndicator(
@@ -557,6 +626,38 @@ class _HomePageState extends State<HomePage> {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _stageRow(ColorScheme cs) {
+    final stages = _threadStates.map((e) => e.status).toSet();
+    final items = [
+      ('Hashing', 'hashing', Icons.fingerprint),
+      ('Checking', 'checking', Icons.search),
+      ('Uploading', 'uploading', Icons.cloud_upload_outlined),
+      ('Committing', 'finalizing', Icons.task_alt),
+    ];
+    return Row(
+      children: [
+        for (final (label, key, icon) in items)
+          Expanded(
+            child: Container(
+              margin: const EdgeInsets.only(right: 6),
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              decoration: BoxDecoration(
+                color: stages.contains(key) ? cs.primary.withValues(alpha: 0.10) : cs.surfaceContainerHighest.withValues(alpha: 0.35),
+                borderRadius: BorderRadius.circular(9),
+              ),
+              child: Column(
+                children: [
+                  Icon(icon, size: 15, color: stages.contains(key) ? cs.primary : cs.onSurfaceVariant),
+                  const SizedBox(height: 4),
+                  Text(label, style: TextStyle(fontSize: 9, color: cs.onSurfaceVariant)),
+                ],
+              ),
+            ),
+          ),
+      ],
     );
   }
 
@@ -584,8 +685,33 @@ class _HomePageState extends State<HomePage> {
           children: [
             Text('Activity', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: cs.onSurface)),
             const SizedBox(height: 10),
-            Card(
-              child: Padding(padding: const EdgeInsets.all(16), child: _activityBody(cs)),
+            PixieCard(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Row(
+                    children: [
+                      const MicroLabel('Session map'),
+                      const Spacer(),
+                      PillSwitch<int>(
+                        values: const [0, 1, 2, 3],
+                        labels: const ['All', 'Done', 'Skip', 'Fail'],
+                        selected: _activityFilter,
+                        onChanged: (v) => setState(() => _activityFilter = v),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  DotMatrix(states: _results.reversed.map((r) {
+                    if (r.isError) return 3;
+                    if (r.skipped) return 2;
+                    return 1;
+                  }).toList()),
+                  const SizedBox(height: 14),
+                  Divider(color: cs.outlineVariant.withValues(alpha: 0.4)),
+                  _activityBody(cs),
+                ],
+              ),
             ),
           ],
         ),
@@ -620,9 +746,9 @@ class _HomePageState extends State<HomePage> {
             ),
           if (_threadStates.isNotEmpty) Divider(height: 20, color: cs.outlineVariant.withValues(alpha: 0.4)),
           SizedBox(height: 220, child: ListView.builder(
-            itemCount: _results.length,
+            itemCount: _filteredResults.length,
             itemBuilder: (context, i) {
-              final r = _results[i];
+              final r = _filteredResults[i];
               final color = r.isError ? cs.error : r.skipped ? Colors.orange.shade700 : Colors.green.shade700;
               final icon = r.isError ? Icons.error_outline : r.skipped ? Icons.remove_circle_outline : Icons.check_circle_outline;
               return Padding(padding: const EdgeInsets.symmetric(vertical: 5), child: Row(
@@ -645,19 +771,15 @@ class _HomePageState extends State<HomePage> {
         ],
       );
 
-  Widget _chip(String value, String label, IconData icon, Color color, ColorScheme cs) => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        decoration: BoxDecoration(color: cs.surface, borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.5))),
-        child: Row(children: [
-          Icon(icon, size: 16, color: color),
-          const SizedBox(width: 7),
-          Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(value, style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15, color: color)),
-            Text(label, style: const TextStyle(fontSize: 10, color: Colors.grey)),
-          ]),
-        ]),
-      );
+  List<UploadResult> get _filteredResults {
+    if (_activityFilter == 0) return _results;
+    return _results.where((r) => switch (_activityFilter) {
+      1 => !r.isError && !r.skipped,
+      2 => r.skipped,
+      3 => r.isError,
+      _ => true,
+    }).toList();
+  }
 
   String _formatBytes(int bytes) {
     if (bytes < 1024) return '$bytes B';

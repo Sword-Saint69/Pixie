@@ -1,4 +1,5 @@
 import 'package:material_ui/material_ui.dart';
+import 'package:gotohp_rs/design.dart';
 import 'package:gotohp_rs/src/rust/api.dart';
 import 'package:gotohp_rs/src/rust/api/app_types.dart';
 import 'package:gotohp_rs/theme_controller.dart';
@@ -93,6 +94,8 @@ class _SettingsState extends State<SettingsPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              const MicroLabel('Preferences'),
+              const SizedBox(height: 6),
               Text(
                 'Make Pixie yours',
                 style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: cs.onSurface),
@@ -116,15 +119,12 @@ class _SettingsState extends State<SettingsPage> {
                   child: Center(child: CircularProgressIndicator()),
                 )
               else
-                Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(20),
-                    child: switch (_section) {
-                      _Section.appearance => _appearance(cs),
-                      _Section.upload => _upload(cs),
-                      _Section.advanced => _advanced(cs),
-                    },
-                  ),
+                PixieCard(
+                  child: switch (_section) {
+                    _Section.appearance => _appearance(cs),
+                    _Section.upload => _upload(cs),
+                    _Section.advanced => _advanced(cs),
+                  },
                 ),
             ],
           ),

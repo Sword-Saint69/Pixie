@@ -43,6 +43,17 @@ rust/build.rs              prost-build
 rust_builder/              cargokit build glue (generated)
 ```
 
+## Design language
+
+Derived from the reference material in `~/Downloads/inspo`: editorial white/dark
+cards with bold oversized figures and small uppercase micro-labels (both
+`desdivj` stills), a three-part workflow-health bar and legend (second still),
+a sectioned sidebar with active pill rows and system section at the bottom
+(`jahidul`), a dot matrix for per-file outcomes and a dark rounded score panel
+(`uiuxjosh`), plus the motion shown in the three videos: counting numbers, a
+progress ring, an expanding task card with step timings, and a dark pill toast
+with an action.
+
 ## Interface
 
 - **Sidebar** — Upload, Settings, Accounts, About. Collapses to a bottom bar on narrow windows.

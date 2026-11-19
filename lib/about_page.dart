@@ -1,4 +1,5 @@
 import 'package:gotohp_rs/brand.dart';
+import 'package:gotohp_rs/design.dart';
 import 'package:material_ui/material_ui.dart';
 
 class AboutPage extends StatelessWidget {
@@ -29,10 +30,8 @@ class AboutPage extends StatelessWidget {
               const SizedBox(height: 4),
               Text('Photo cloud uploader · Rust core', style: TextStyle(fontSize: 13, color: cs.onSurfaceVariant)),
               const SizedBox(height: 28),
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(18),
-                  child: Column(
+              PixieCard(
+                child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text('Built with Flutter and Rust', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: cs.onSurface)),
@@ -47,7 +46,6 @@ class AboutPage extends StatelessWidget {
                         style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant),
                       ),
                     ],
-                  ),
                 ),
               ),
             ],
