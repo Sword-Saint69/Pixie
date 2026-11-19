@@ -217,7 +217,8 @@ impl ConfigStore {
     fn write_locked(&self, config: &Config) -> Result<()> {
         let bytes = serde_yaml::to_string(config)?;
         let parent = self.path.parent().unwrap_or_else(|| Path::new("."));
-        fs::create_dir_all(parent)?;
+        fs::create_dir_all(parent)
+            .with_context(|| format!("create config directory {}", parent.display()))?;
         let tmp = parent.join(format!(
             ".gotohp-config-{}-{}",
             std::process::id(),
@@ -237,7 +238,7 @@ impl ConfigStore {
             Ok(()) => Ok(()),
             Err(err) => {
                 let _ = fs::remove_file(&tmp);
-                Err(err).context("replace config file")
+                Err(err).with_context(|| format!("replace config file {}", self.path.display()))
             }
         }
     }
@@ -260,20 +261,31 @@ fn load_file(path: &Path) -> Result<Config> {
 /// Portable config next to the executable or in the working directory wins,
 /// exactly as in the original client.
 pub fn determine_config_path() -> PathBuf {
-    let local = PathBuf::from("gotohp.config");
-    if local.exists() {
-        return local;
+    // Inside an Android app the CWD is "/" and the executable lives in the
+    // read-only APK/lib directory; XDG/HOME points at an unwritable place.
+    // Use the app's own private data directory instead.
+    #[cfg(target_os = "android")]
+    {
+        return PathBuf::from("/data/data/com.example.gotohp_rs/files/gotohp.config");
     }
-    if let Ok(exe) = std::env::current_exe() {
-        let candidate = exe.parent().unwrap_or(Path::new(".")).join("gotohp.config");
-        if candidate.exists() {
-            return candidate;
+
+    #[cfg(not(target_os = "android"))]
+    {
+        let local = PathBuf::from("gotohp.config");
+        if local.exists() {
+            return local;
         }
+        if let Ok(exe) = std::env::current_exe() {
+            let candidate = exe.parent().unwrap_or(Path::new(".")).join("gotohp.config");
+            if candidate.exists() {
+                return candidate;
+            }
+        }
+        dirs::config_dir()
+            .unwrap_or_else(|| PathBuf::from("."))
+            .join("gotohp")
+            .join("gotohp.config")
     }
-    dirs::config_dir()
-        .unwrap_or_else(|| PathBuf::from("."))
-        .join("gotohp")
-        .join("gotohp.config")
 }
 
 pub fn parse_query(input: &str) -> HashMap<String, String> {

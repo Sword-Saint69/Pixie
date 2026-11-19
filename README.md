@@ -130,4 +130,5 @@ contains `libgotohp_core.so` for arm64-v8a, armeabi-v7a and x86_64; the
 arm64-only APK (22.9 MB) contains only arm64-v8a libraries. Gradle emits a
 non-fatal warning that `desktop_drop` still applies the Kotlin Gradle Plugin.
 CLI smoke tests for `version`, `creds add/list` against a temporary config:
-succeeded.
+succeeded. The UI includes stat tiles, account/preferences cards, a drop zone,
+queue chips, per-thread progress and a results list.

@@ -25,7 +25,7 @@ void main() {
     await tester.pumpWidget(const GotohpApp());
     await tester.pumpAndSettle();
     expect(find.textContaining('Account'), findsWidgets);
-    expect(find.textContaining('Upload settings'), findsOneWidget);
+    expect(find.textContaining('Preferences'), findsOneWidget);
     expect(find.textContaining('Upload queue'), findsOneWidget);
     expect(find.textContaining('Live progress'), findsOneWidget);
   });
