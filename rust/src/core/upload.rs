@@ -209,8 +209,10 @@ async fn run_upload(
         return Ok(());
     }
 
-    let results: Vec<CoreUploadResult> = futures::stream::iter(files)
-        .map(|path| {
+    let worker_count = options.threads.max(1);
+    let results: Vec<CoreUploadResult> = futures::stream::iter(files.into_iter().enumerate())
+        .map(|(index, path)| {
+            let worker = (index % worker_count) as i32;
             let options = options.clone();
             let state = state.clone();
             let cancel = cancel.clone();
@@ -219,7 +221,6 @@ async fn run_upload(
                 if cancel.is_cancelled() {
                     return CoreUploadResult::default();
                 }
-                let worker = 0;
                 let api = match Api::new(
                     &options.credential,
                     &options.proxy,

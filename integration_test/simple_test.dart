@@ -35,7 +35,7 @@ void main() {
     expect(find.text('Accounts'), findsWidgets);
     expect(find.text('About'), findsWidgets);
 
-    await tester.tap(find.text('Settings').first);
+    await tester.tap(find.text('Settings').first, warnIfMissed: false);
     await tester.pumpAndSettle();
     expect(find.textContaining('Make Pixie yours'), findsOneWidget);
     expect(find.textContaining('Appearance'), findsWidgets);

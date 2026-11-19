@@ -206,6 +206,22 @@ class _AccountsState extends State<AccountsPage> {
                             tooltip: 'Remove',
                             icon: Icon(Icons.delete_outline, size: 18, color: cs.error),
                             onPressed: () async {
+                              final confirm = await showDialog<bool>(
+                                context: context,
+                                builder: (context) => AlertDialog(
+                                  title: const Text('Remove account?'),
+                                  content: Text('Remove ${account.email} from this device?'),
+                                  actions: [
+                                    TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
+                                    FilledButton(
+                                      onPressed: () => Navigator.pop(context, true),
+                                      style: FilledButton.styleFrom(backgroundColor: cs.error),
+                                      child: const Text('Remove'),
+                                    ),
+                                  ],
+                                ),
+                              );
+                              if (confirm != true) return;
                               try {
                                 await removeAccount(email: account.email);
                                 await _load();

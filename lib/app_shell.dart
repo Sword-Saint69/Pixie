@@ -49,11 +49,20 @@ class _AppShellState extends State<AppShell> {
     final cs = Theme.of(context).colorScheme;
     final wide = MediaQuery.sizeOf(context).width >= 700;
     final pages = <Widget>[
-      const HomePage(),
+      HomePage(onOpenSettings: () => _go(1)),
       SettingsPage(theme: widget.theme),
       const AccountsPage(),
       const AboutPage(),
     ];
+    final active = AnimatedSwitcher(
+      duration: const Duration(milliseconds: 240),
+      switchInCurve: Curves.easeOut,
+      transitionBuilder: (child, animation) => SlideTransition(
+        position: Tween<Offset>(begin: const Offset(0, 0.025), end: Offset.zero).animate(animation),
+        child: FadeTransition(opacity: animation, child: child),
+      ),
+      child: KeyedSubtree(key: ValueKey(_index), child: pages[_index]),
+    );
 
     final appBar = AppBar(
       leading: wide ? null : const PixieLogo(size: 26),
@@ -79,6 +88,17 @@ class _AppShellState extends State<AppShell> {
               PixieThemeMode.dark => PixieThemeMode.system,
             };
             widget.theme.setMode(next);
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Theme: ${switch (next) {
+                  PixieThemeMode.system => 'System',
+                  PixieThemeMode.light => 'Light',
+                  PixieThemeMode.dark => 'Dark',
+                }}'),
+                duration: const Duration(seconds: 1),
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
           },
         ),
         IconButton(
@@ -93,7 +113,7 @@ class _AppShellState extends State<AppShell> {
     if (!wide) {
       return Scaffold(
         appBar: appBar,
-        body: IndexedStack(index: _index, children: pages),
+        body: active,
         bottomNavigationBar: NavigationBar(
           selectedIndex: _index,
           onDestinationSelected: _go,
@@ -144,7 +164,7 @@ class _AppShellState extends State<AppShell> {
             ],
           ),
           VerticalDivider(width: 1, color: cs.outlineVariant.withValues(alpha: 0.4)),
-          Expanded(child: IndexedStack(index: _index, children: pages)),
+          Expanded(child: active),
         ],
       ),
     );

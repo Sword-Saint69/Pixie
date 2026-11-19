@@ -50,6 +50,11 @@ rust_builder/              cargokit build glue (generated)
 - **Branding** — the supplied Pixie mascot is bundled at `assets/pixie_logo.png` and used in the sidebar, the drop-zone empty state, the About page and the Android launcher icon.
 - **Themes** — cycle with the sun icon in the app bar, or pick mode and accent under Settings → Appearance. Choices survive restarts via `shared_preferences`.
 - **Minimal upload screen** — drop zone, queue chips, album field, compact counters and an activity panel that only appears once a run starts.
+- **Preflight** — the queue is measured before upload (file count + total bytes), with size/speed/ETA during a run.
+- **Queue persistence** — paths, album name and AUTO mode survive restarts via `shared_preferences`.
+- **Motion** — animated page transitions, drop-zone hover scale, expanding progress/activity panels and theme-change snackbars.
+- **Keyboard** — Ctrl+U starts an upload, Ctrl+, opens settings.
+- **Album AUTO** toggle on the upload screen; real per-worker IDs in Activity (fixed in the Rust pool).
 
 ## Build
 
