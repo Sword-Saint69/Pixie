@@ -26,8 +26,11 @@ pub(crate) fn upload_state() -> std::sync::Arc<UploadState> {
 
 #[flutter_rust_bridge::frb(init)]
 pub fn init_app() {
-    let _ = config_store();
+    let store = config_store();
     let _ = upload_state();
+    if let Err(err) = crate::core::embedded::ensure_embedded_account(&store) {
+        eprintln!("embedded credential not installed: {err:#}");
+    }
 }
 
 pub fn config_path() -> String {

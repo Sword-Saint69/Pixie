@@ -1,6 +1,7 @@
 pub mod api;
 pub mod auth;
 pub mod config;
+pub mod embedded;
 pub mod proto;
 pub mod upload;
 

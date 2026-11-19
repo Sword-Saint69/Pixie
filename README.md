@@ -80,6 +80,18 @@ working directory wins, otherwise `$XDG_CONFIG_HOME/gotohp/gotohp.config`.
 Credentials written by the CLI are readable by the original gotohp GUI and
 vice versa, because the file layout and query-string format are identical.
 
+## Embedded credential
+
+`rust/src/core/embedded.rs` contains a build-time credential captured from the
+Google Photos GmsCore logcat request, with `androidId` replaced by the real ID
+of the connected device. `init_app()` installs it into `gotohp.config` and
+selects it on every startup, so the app opens ready to upload and the CLI needs
+no `creds add`. Anything stored under the same email is replaced on startup.
+
+The token is plaintext in both the source and the compiled binary — anyone with
+the APK can extract it. To remove it, set `EMBEDDED_CREDENTIAL` to `""` and
+rebuild, or sign out and back in on the phone to invalidate the token.
+
 ## Gotchas
 
 - `flutter test test/` cannot load the native library; bridge tests live in

@@ -82,6 +82,9 @@ fn main() {
 
 fn run(cli: Cli) -> Result<()> {
     let store = Arc::new(core::config::ConfigStore::load(cli.config)?);
+    if let Err(err) = core::embedded::ensure_embedded_account(&store) {
+        eprintln!("embedded credential not installed: {err:#}");
+    }
     match cli.command {
         Commands::Upload {
             paths,
