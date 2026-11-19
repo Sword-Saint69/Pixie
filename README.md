@@ -53,7 +53,8 @@ flutter_rust_bridge_codegen generate   # after editing rust/src/api
 cargo test --manifest-path rust/Cargo.toml
 flutter test integration_test -d linux
 flutter build linux --release
-flutter build apk --release
+flutter build apk --release                                  # universal, ~63 MB
+make build-apk-arm64                                          # arm64 only, ~23 MB
 cargo build --release --manifest-path rust/Cargo.toml --bin gotohp-rs-cli
 ```
 
@@ -124,8 +125,9 @@ rebuild, or sign out and back in on the phone to invalidate the token.
 
 Rust unit tests: 10 passed. Flutter integration tests on Linux: 2 passed.
 `flutter analyze`: no issues. `flutter build linux --release` and
-`flutter build apk --release`: both succeeded; the APK (65.2 MB) contains
-`libgotohp_core.so` for arm64-v8a, armeabi-v7a and x86_64. Gradle emits a
+`flutter build apk --release`: both succeeded. The universal APK (65.2 MB)
+contains `libgotohp_core.so` for arm64-v8a, armeabi-v7a and x86_64; the
+arm64-only APK (22.9 MB) contains only arm64-v8a libraries. Gradle emits a
 non-fatal warning that `desktop_drop` still applies the Kotlin Gradle Plugin.
 CLI smoke tests for `version`, `creds add/list` against a temporary config:
 succeeded.

@@ -4,7 +4,7 @@ CARGO   ?= cargo
 DEVICE  ?= linux
 
 .DEFAULT_GOAL := help
-.PHONY: help gen test test-rust test-integration analyze build build-cli build-apk clean
+.PHONY: help gen test test-rust test-integration analyze build build-cli build-apk build-apk-arm64 clean
 
 help: ## Show targets
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-16s %s\n", $$1, $$2}'
@@ -30,8 +30,12 @@ build: ## Release Linux bundle
 build-cli: ## Release CLI binary
 	$(CARGO) build --release --manifest-path rust/Cargo.toml --bin gotohp-rs-cli
 
-build-apk: ## Debug APK (JDK 21 required)
-	$(FLUTTER) build apk --debug
+build-apk: ## Universal release APK (all ABIs, JDK 21 required)
+	$(FLUTTER) build apk --release
+
+build-apk-arm64: ## arm64-only release APK (~23 MB)
+	rm -rf build/gotohp_core/jniLibs/release/armeabi-v7a build/gotohp_core/jniLibs/release/x86_64
+	$(FLUTTER) build apk --release --target-platform android-arm64
 
 clean:
 	$(FLUTTER) clean
