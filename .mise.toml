@@ -1,0 +1,3 @@
+[tools]
+# Gradle 9.5.0 (Flutter 3.50 template) cannot parse Java 27 class files.
+java = "21"
