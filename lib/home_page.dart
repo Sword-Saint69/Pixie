@@ -59,6 +59,8 @@ class _HomePageState extends State<HomePage> {
   bool _dragOver = false;
   String? _error;
   Timer? _poll;
+  Timer? _successTimer;
+  bool _showSuccess = false;
   int _activityFilter = 0; // 0 all, 1 uploaded, 2 skipped, 3 failed
 
   @override
@@ -71,6 +73,7 @@ class _HomePageState extends State<HomePage> {
   @override
   void dispose() {
     _poll?.cancel();
+    _successTimer?.cancel();
     _preflightTimer?.cancel();
     _albumController.dispose();
     super.dispose();
@@ -192,6 +195,11 @@ class _HomePageState extends State<HomePage> {
 
   void _showCompletion() {
     HapticFeedback.lightImpact();
+    setState(() => _showSuccess = true);
+    _successTimer?.cancel();
+    _successTimer = Timer(const Duration(milliseconds: 1800), () {
+      if (mounted) setState(() => _showSuccess = false);
+    });
     final messenger = ScaffoldMessenger.maybeOf(context);
     if (messenger == null) return;
     final s = _summary;
@@ -317,7 +325,8 @@ class _HomePageState extends State<HomePage> {
                     const SizedBox(height: 14),
                     if (_paths.isNotEmpty || _summary.total > 0)
                       _statusStrip(cs),
-                    const SizedBox(height: 18),
+                    const SizedBox(height: 14),
+                    _successBadge(cs),
                     _dropZone(cs),
                     const SizedBox(height: 14),
                     _fileButtons(cs),
@@ -489,6 +498,38 @@ class _HomePageState extends State<HomePage> {
     ),
   );
 
+  Widget _successBadge(ColorScheme cs) => AnimatedSwitcher(
+    duration: const Duration(milliseconds: 260),
+    transitionBuilder: (child, animation) =>
+        ScaleTransition(scale: animation, child: child),
+    child: _showSuccess
+        ? Container(
+            key: const ValueKey('success'),
+            margin: const EdgeInsets.only(bottom: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+            decoration: BoxDecoration(
+              color: successColor(context).withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const PixieLogo(size: 20),
+                const SizedBox(width: 8),
+                Text(
+                  'All done!',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: successColor(context),
+                  ),
+                ),
+              ],
+            ),
+          )
+        : const SizedBox.shrink(key: ValueKey('none')),
+  );
+
   Widget _dropZone(ColorScheme cs) {
     if (Platform.isAndroid || Platform.isIOS) return _mobilePickArea(cs);
     return DropTarget(
@@ -500,7 +541,7 @@ class _HomePageState extends State<HomePage> {
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 160),
         curve: Curves.easeOut,
-        height: 176,
+        height: 150,
         alignment: Alignment.center,
         transform: Matrix4.diagonal3Values(
           _dragOver ? 1.015 : 1.0,
@@ -1091,7 +1132,7 @@ class _HomePageState extends State<HomePage> {
         width: 30,
         height: 30,
         fit: BoxFit.cover,
-        errorBuilder: (_, __, ___) => Icon(fallback, size: 18, color: color),
+        errorBuilder: (_, _, _) => Icon(fallback, size: 18, color: color),
       ),
     );
   }
@@ -1099,8 +1140,9 @@ class _HomePageState extends State<HomePage> {
   String _formatBytes(int bytes) {
     if (bytes < 1024) return '$bytes B';
     if (bytes < 1024 * 1024) return '${(bytes / 1024).round()} KB';
-    if (bytes < 1024 * 1024 * 1024)
+    if (bytes < 1024 * 1024 * 1024) {
       return '${(bytes / 1048576).toStringAsFixed(1)} MB';
+    }
     return '${(bytes / 1073741824).toStringAsFixed(2)} GB';
   }
 }

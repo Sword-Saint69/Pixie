@@ -115,8 +115,9 @@ class _AccountsState extends State<AccountsPage> {
   Future<void> _test(AccountInfo account) async {
     try {
       await validateAccount(email: account.email);
-      if (mounted)
+      if (mounted) {
         setState(() => _notice = '${account.email}: credential accepted');
+      }
     } catch (e) {
       _setError(e);
     }
@@ -301,7 +302,9 @@ class _AccountsState extends State<AccountsPage> {
                           PopupMenuButton<String>(
                             tooltip: 'Account actions',
                             onSelected: (value) async {
-                              if (value == 'test') await _test(account);
+                              if (value == 'test') {
+                                await _test(account);
+                              }
                               if (value == 'select') {
                                 try {
                                   await selectAccount(email: account.email);
@@ -310,7 +313,9 @@ class _AccountsState extends State<AccountsPage> {
                                   _setError(e);
                                 }
                               }
-                              if (value == 'remove') await _remove(account);
+                              if (value == 'remove') {
+                                await _remove(account);
+                              }
                             },
                             itemBuilder: (context) => const [
                               PopupMenuItem(

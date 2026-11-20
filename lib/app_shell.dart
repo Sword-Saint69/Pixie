@@ -25,6 +25,8 @@ class _AppShellState extends State<AppShell> {
   bool _paused = false;
   int _done = 0;
   int _total = 0;
+  String _account = '';
+  int _accountCount = 0;
   Timer? _statusTimer;
 
   static const _titles = ['Upload', 'Settings', 'Accounts', 'About'];
@@ -32,6 +34,7 @@ class _AppShellState extends State<AppShell> {
   @override
   void initState() {
     super.initState();
+    _loadAccount();
     _statusTimer = Timer.periodic(const Duration(seconds: 1), (_) async {
       try {
         final running = await isUploadRunning();
@@ -58,7 +61,23 @@ class _AppShellState extends State<AppShell> {
     super.dispose();
   }
 
-  void _go(int index) => setState(() => _index = index);
+  Future<void> _loadAccount() async {
+    try {
+      final email = await selectedAccount();
+      final accounts = await listAccounts();
+      if (mounted) {
+        setState(() {
+          _account = email;
+          _accountCount = accounts.length;
+        });
+      }
+    } catch (_) {}
+  }
+
+  void _go(int index) {
+    if (index == 2) _loadAccount();
+    setState(() => _index = index);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -163,6 +182,9 @@ class _AppShellState extends State<AppShell> {
             onDarkToggle: (value) => widget.theme.setMode(
               value ? PixieThemeMode.dark : PixieThemeMode.light,
             ),
+            email: _account,
+            accountCount: _accountCount,
+            onAccounts: () => _go(2),
           ),
           VerticalDivider(
             width: 1,
@@ -225,12 +247,18 @@ class _Sidebar extends StatelessWidget {
     required this.onSelect,
     required this.dark,
     required this.onDarkToggle,
+    required this.email,
+    required this.accountCount,
+    required this.onAccounts,
   });
 
   final int index;
   final ValueChanged<int> onSelect;
   final bool dark;
   final ValueChanged<bool> onDarkToggle;
+  final String email;
+  final int accountCount;
+  final VoidCallback onAccounts;
 
   @override
   Widget build(BuildContext context) {
@@ -279,7 +307,9 @@ class _Sidebar extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(height: 28),
+          const SizedBox(height: 18),
+          _accountCard(cs),
+          const SizedBox(height: 20),
           const Padding(
             padding: EdgeInsets.symmetric(horizontal: 12),
             child: MicroLabel('Workspace'),
@@ -319,6 +349,60 @@ class _Sidebar extends StatelessWidget {
       ),
     );
   }
+
+  Widget _accountCard(ColorScheme cs) => Material(
+    color: Colors.transparent,
+    child: InkWell(
+      onTap: onAccounts,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.all(10),
+        decoration: BoxDecoration(
+          color: cs.surfaceContainerHighest.withValues(alpha: 0.4),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.35)),
+        ),
+        child: Row(
+          children: [
+            CircleAvatar(
+              radius: 14,
+              backgroundColor: cs.primary.withValues(alpha: 0.14),
+              child: Text(
+                email.isEmpty ? '?' : email[0].toUpperCase(),
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  color: cs.primary,
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    email.isEmpty ? 'No account' : email,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: cs.onSurface,
+                    ),
+                  ),
+                  Text(
+                    '$accountCount account(s)',
+                    style: TextStyle(fontSize: 9, color: cs.onSurfaceVariant),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
 
   Widget _tile(int value, IconData icon, String label, ColorScheme cs) {
     final selected = index == value;
