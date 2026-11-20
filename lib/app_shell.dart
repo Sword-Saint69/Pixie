@@ -35,7 +35,7 @@ class _AppShellState extends State<AppShell> {
   void initState() {
     super.initState();
     _loadAccount();
-    _statusTimer = Timer.periodic(const Duration(seconds: 1), (_) async {
+    _statusTimer = Timer.periodic(const Duration(milliseconds: 400), (_) async {
       try {
         final running = await isUploadRunning();
         final paused = await isUploadPaused();

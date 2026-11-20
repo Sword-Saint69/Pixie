@@ -8,7 +8,7 @@ use futures::StreamExt;
 use sha1::Digest;
 use std::collections::{HashMap, VecDeque};
 use std::path::{Path, PathBuf};
-use std::sync::atomic::{AtomicBool, AtomicI64, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicI32, AtomicI64, Ordering};
 use std::sync::Arc;
 use std::sync::Mutex;
 use std::time::Instant;
@@ -312,23 +312,24 @@ async fn run_upload(
                     return CoreUploadResult::default();
                 }
                 state.wait_if_paused().await;
-                let api = match Api::new(
+                let result = match Api::new(
                     &options.credential,
                     &options.proxy,
                     options.saver,
                     options.use_quota,
                 ) {
-                    Ok(api) => api,
-                    Err(err) => {
-                        return CoreUploadResult {
-                            path: path.display().to_string(),
-                            is_error: true,
-                            error_message: err.to_string(),
-                            ..Default::default()
-                        }
+                    Ok(api) => {
+                        upload_single_file(&api, &path, &options, &state, worker, &cancel).await
                     }
+                    Err(err) => CoreUploadResult {
+                        path: path.display().to_string(),
+                        is_error: true,
+                        error_message: err.to_string(),
+                        ..Default::default()
+                    },
                 };
-                upload_single_file(&api, &path, &options, &state, worker, &cancel).await
+                record_result(&state, &result).await;
+                result
             }
         })
         .buffer_unordered(options.threads)
@@ -336,38 +337,11 @@ async fn run_upload(
         .await;
 
     let mut successful = HashMap::new();
-    let mut summary = state.summary.write().await;
     for result in &results {
-        if result.is_error {
-            summary.failed += 1;
-        } else if result.skipped {
-            summary.skipped += 1;
-        } else {
-            summary.succeeded += 1;
-            if !result.media_key.is_empty() {
-                successful.insert(result.path.clone(), result.media_key.clone());
-            }
+        if !result.is_error && !result.skipped && !result.media_key.is_empty() {
+            successful.insert(result.path.clone(), result.media_key.clone());
         }
-        if !result.is_error {
-            let bytes = std::fs::metadata(&result.path)
-                .map(|m| m.len() as i64)
-                .unwrap_or(0);
-            state.add_uploaded_bytes(bytes);
-        }
-        summary.results.push(result.clone());
-        state.emit_sync(CoreUploadEvent {
-            event_type: "file_result".into(),
-            file_path: result.path.clone(),
-            media_key: result.media_key.clone(),
-            is_error: result.is_error,
-            skipped: result.skipped,
-            skip_code: result.skip_code.clone(),
-            skip_reason: result.skip_reason.clone(),
-            message: result.error_message.clone(),
-            ..Default::default()
-        });
     }
-    drop(summary);
 
     if !successful.is_empty() && !cancel.is_cancelled() {
         let api = Api::new(
@@ -403,6 +377,35 @@ async fn run_upload(
         }
     }
     Ok(())
+}
+
+async fn record_result(state: &UploadState, result: &CoreUploadResult) {
+    {
+        let mut summary = state.summary.write().await;
+        if result.is_error {
+            summary.failed += 1;
+        } else if result.skipped {
+            summary.skipped += 1;
+            let bytes = std::fs::metadata(&result.path)
+                .map(|m| m.len() as i64)
+                .unwrap_or(0);
+            state.add_uploaded_bytes(bytes);
+        } else {
+            summary.succeeded += 1;
+        }
+        summary.results.push(result.clone());
+    }
+    state.emit_sync(CoreUploadEvent {
+        event_type: "file_result".into(),
+        file_path: result.path.clone(),
+        media_key: result.media_key.clone(),
+        is_error: result.is_error,
+        skipped: result.skipped,
+        skip_code: result.skip_code.clone(),
+        skip_reason: result.skip_reason.clone(),
+        message: result.error_message.clone(),
+        ..Default::default()
+    });
 }
 
 fn album_event(name: &str, result: Result<String>) -> CoreUploadEvent {
@@ -546,8 +549,18 @@ async fn upload_single_file(
     let state_for_progress = state.clone();
     let path_for_progress = path_str.clone();
     let name_for_progress = file_name.clone();
+    let last_sent = Arc::new(AtomicI64::new(0));
+    let last_attempt = Arc::new(AtomicI32::new(0));
     let finalize = {
         api.upload_file(path, &upload_token, move |sent, total, attempt| {
+            let previous = if last_attempt.swap(attempt, Ordering::AcqRel) != attempt {
+                0
+            } else {
+                last_sent.swap(sent, Ordering::AcqRel)
+            };
+            if sent > previous {
+                state_for_progress.add_uploaded_bytes(sent - previous);
+            }
             state_for_progress.emit_sync(CoreUploadEvent {
                 event_type: "thread".into(),
                 worker_id: worker,
@@ -754,6 +767,21 @@ pub fn timestamp_from_filename(path: &Path) -> Option<i64> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[tokio::test]
+    async fn record_result_updates_summary_immediately() {
+        let state = UploadState::default();
+        let result = CoreUploadResult {
+            path: "/photos/a.jpg".into(),
+            media_key: "key".into(),
+            ..Default::default()
+        };
+        record_result(&state, &result).await;
+        let summary = state.summary.read().await.clone();
+        assert_eq!(summary.succeeded, 1);
+        assert_eq!(summary.results.len(), 1);
+        assert_eq!(summary.results[0].media_key, "key");
+    }
 
     #[test]
     fn progress_tracks_totals_and_eta_defaults() {

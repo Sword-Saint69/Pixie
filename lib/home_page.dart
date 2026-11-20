@@ -67,7 +67,7 @@ class _HomePageState extends State<HomePage> {
   void initState() {
     super.initState();
     _load();
-    _poll = Timer.periodic(const Duration(milliseconds: 180), (_) => _pump());
+    _poll = Timer.periodic(const Duration(milliseconds: 150), (_) => _pump());
   }
 
   @override
@@ -143,13 +143,23 @@ class _HomePageState extends State<HomePage> {
       final running = await isUploadRunning();
       final paused = await isUploadPaused();
       final progress = await getProgress();
+      final summary = await getSummary();
       if (!mounted) return;
+
       final wasRunning = _running;
-      var summaryChanged = false;
+      final changed =
+          events.isNotEmpty ||
+          running != _running ||
+          paused != _paused ||
+          progress != _progress ||
+          summary != _summary;
+      if (!changed) return;
+
       setState(() {
         _running = running;
         _paused = paused;
         _progress = progress;
+        _summary = summary;
         for (final event in events) {
           switch (event.eventType) {
             case 'thread':
@@ -179,15 +189,8 @@ class _HomePageState extends State<HomePage> {
         }
         _threadStates.sort((a, b) => a.workerId.compareTo(b.workerId));
       });
-      if (!running) {
-        final fresh = await getSummary();
-        if (!mounted) return;
-        setState(() {
-          _summary = fresh;
-          summaryChanged = true;
-        });
-      }
-      if (wasRunning && !running && summaryChanged) {
+
+      if (wasRunning && !running) {
         _showCompletion();
       }
     } catch (_) {}
