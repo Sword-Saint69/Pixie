@@ -202,3 +202,15 @@ pub fn preview_files_detailed(
 pub fn get_progress() -> UploadProgress {
     upload_state().progress().into()
 }
+
+pub fn pause_upload() {
+    upload_state().pause();
+}
+
+pub fn resume_upload() {
+    upload_state().resume();
+}
+
+pub fn is_upload_paused() -> bool {
+    upload_state().is_paused()
+}

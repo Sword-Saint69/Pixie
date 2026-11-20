@@ -63,6 +63,7 @@ with an action.
 - **Minimal upload screen** — drop zone, queue chips, album field, compact counters and an activity panel that only appears once a run starts.
 - **Preflight** — the queue is measured before upload (file count + total bytes), with size/speed/ETA during a run.
 - **Queue persistence** — paths, album name and AUTO mode survive restarts via `shared_preferences`.
+- **UX review pass** — short icon tabs in Settings, full-width ellipsised emails with an overflow menu, compact empty stats, mobile "Select photos" area, single primary Upload button, per-file thumbnails, pause/resume (Rust-backed), a meaningful tappable status pill, haptics, and an About page with changelog, updates, feedback, licenses and copy-debug-info.
 - **Rust-owned telemetry** — preflight file sizing, progress totals, elapsed time, speed and ETA are computed in `rust/src/core/upload.rs` and exposed through `previewFilesDetailed()`, `getProgress()` and `coreInfo()`. The About page reads the live crate version, bridge version and target from Rust.
 - **Dark theme** — layered near-black surfaces, lighter accent, brighter semantic green/amber/red and softer outlines for contrast.
 - **Motion** — animated page transitions, drop-zone hover scale, expanding progress/activity panels and theme-change snackbars.

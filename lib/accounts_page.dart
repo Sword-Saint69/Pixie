@@ -100,6 +100,40 @@ class _AccountsState extends State<AccountsPage> {
     }
   }
 
+  Future<void> _test(AccountInfo account) async {
+    try {
+      await validateAccount(email: account.email);
+      if (mounted) setState(() => _notice = '${account.email}: credential accepted');
+    } catch (e) {
+      _setError(e);
+    }
+  }
+
+  Future<void> _remove(AccountInfo account) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Remove account?'),
+        content: Text('Remove ${account.email} from this device?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: FilledButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.error),
+            child: const Text('Remove'),
+          ),
+        ],
+      ),
+    );
+    if (confirm != true) return;
+    try {
+      await removeAccount(email: account.email);
+      await _load();
+    } catch (e) {
+      _setError(e);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
@@ -173,7 +207,13 @@ class _AccountsState extends State<AccountsPage> {
                         backgroundColor: cs.primary.withValues(alpha: 0.12),
                         child: Text(account.email[0].toUpperCase(), style: TextStyle(color: cs.primary)),
                       ),
-                      title: Text(account.email, style: TextStyle(fontSize: 14, color: cs.onSurface)),
+                      title: Text(
+                        account.email,
+                        style: TextStyle(fontSize: 14, color: cs.onSurface),
+                        maxLines: 1,
+                        softWrap: false,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                       subtitle: Text(
                         account.needsTokenBinding ? 'Needs token binding (not supported)' : 'Ready to upload',
                         style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant),
@@ -190,45 +230,25 @@ class _AccountsState extends State<AccountsPage> {
                               ),
                               child: Text('Active', style: TextStyle(fontSize: 11, color: cs.primary)),
                             ),
-                          IconButton(
-                            tooltip: 'Test credential',
-                            icon: const Icon(Icons.verified_outlined, size: 18),
-                            onPressed: () async {
-                              try {
-                                await validateAccount(email: account.email);
-                                if (mounted) setState(() => _notice = '${account.email}: credential accepted');
-                              } catch (e) {
-                                _setError(e);
+                          PopupMenuButton<String>(
+                            tooltip: 'Account actions',
+                            onSelected: (value) async {
+                              if (value == 'test') await _test(account);
+                              if (value == 'select') {
+                                try {
+                                  await selectAccount(email: account.email);
+                                  await _load();
+                                } catch (e) {
+                                  _setError(e);
+                                }
                               }
+                              if (value == 'remove') await _remove(account);
                             },
-                          ),
-                          IconButton(
-                            tooltip: 'Remove',
-                            icon: Icon(Icons.delete_outline, size: 18, color: cs.error),
-                            onPressed: () async {
-                              final confirm = await showDialog<bool>(
-                                context: context,
-                                builder: (context) => AlertDialog(
-                                  title: const Text('Remove account?'),
-                                  content: Text('Remove ${account.email} from this device?'),
-                                  actions: [
-                                    TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
-                                    FilledButton(
-                                      onPressed: () => Navigator.pop(context, true),
-                                      style: FilledButton.styleFrom(backgroundColor: cs.error),
-                                      child: const Text('Remove'),
-                                    ),
-                                  ],
-                                ),
-                              );
-                              if (confirm != true) return;
-                              try {
-                                await removeAccount(email: account.email);
-                                await _load();
-                              } catch (e) {
-                                _setError(e);
-                              }
-                            },
+                            itemBuilder: (context) => const [
+                              PopupMenuItem(value: 'select', child: Text('Make active')),
+                              PopupMenuItem(value: 'test', child: Text('Test credential')),
+                              PopupMenuItem(value: 'remove', child: Text('Remove account')),
+                            ],
                           ),
                         ],
                       ),

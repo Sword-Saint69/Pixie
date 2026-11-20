@@ -54,6 +54,7 @@ class _HomePageState extends State<HomePage> {
   );
 
   bool _running = false;
+  bool _paused = false;
   bool _dragOver = false;
   String? _error;
   Timer? _poll;
@@ -133,12 +134,14 @@ class _HomePageState extends State<HomePage> {
     try {
       final events = await drainEvents();
       final running = await isUploadRunning();
+      final paused = await isUploadPaused();
       final progress = await getProgress();
       if (!mounted) return;
       final wasRunning = _running;
       var summaryChanged = false;
       setState(() {
         _running = running;
+        _paused = paused;
         _progress = progress;
         for (final event in events) {
           switch (event.eventType) {
@@ -181,6 +184,7 @@ class _HomePageState extends State<HomePage> {
   }
 
   void _showCompletion() {
+    HapticFeedback.lightImpact();
     final messenger = ScaffoldMessenger.maybeOf(context);
     if (messenger == null) return;
     final s = _summary;
@@ -232,6 +236,21 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
+  Future<void> _togglePause() async {
+    HapticFeedback.selectionClick();
+    try {
+      if (_paused) {
+        await resumeUpload();
+      } else {
+        await pauseUpload();
+      }
+      final paused = await isUploadPaused();
+      if (mounted) setState(() => _paused = paused);
+    } catch (e) {
+      _setError(e);
+    }
+  }
+
   Future<void> _start() async {
     if (_selected.isEmpty) {
       _setError('No account selected — add one in the Accounts tab');
@@ -245,6 +264,7 @@ class _HomePageState extends State<HomePage> {
       _setError('Select files or folders first');
       return;
     }
+    HapticFeedback.mediumImpact();
     setState(() {
       _error = null;
       _results.clear();
@@ -281,7 +301,7 @@ class _HomePageState extends State<HomePage> {
         child: Focus(
           autofocus: true,
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
+            padding: const EdgeInsets.all(18),
             child: Center(
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 980),
@@ -290,8 +310,8 @@ class _HomePageState extends State<HomePage> {
                   children: [
                     _header(cs),
                     const SizedBox(height: 14),
-                    _statusStrip(cs),
-                    const SizedBox(height: 22),
+                    if (_paths.isNotEmpty || _summary.total > 0) _statusStrip(cs),
+                    const SizedBox(height: 18),
                     _dropZone(cs),
                     const SizedBox(height: 14),
                     _fileButtons(cs),
@@ -343,7 +363,7 @@ class _HomePageState extends State<HomePage> {
                     const MicroLabel('Session'),
                     const SizedBox(height: 6),
                     Text('Send your photos to the cloud',
-                        style: TextStyle(fontSize: 23, fontWeight: FontWeight.w700, color: cs.onSurface)),
+                        style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: cs.onSurface)),
                     const SizedBox(height: 4),
                     Text('Drop files, choose a folder, and Pixie handles the rest.',
                         style: TextStyle(fontSize: 13, color: cs.onSurfaceVariant)),
@@ -358,23 +378,43 @@ class _HomePageState extends State<HomePage> {
               ),
             ],
           ),
-          const SizedBox(height: 18),
-          Row(
-            children: [
-              StatCard(label: 'Files queued', value: '$_preflightCount',
-                  icon: Icons.folder_open_outlined, color: cs.primary, count: _preflightCount),
-              const SizedBox(width: 10),
-              StatCard(label: 'Uploaded', value: '${_summary.succeeded}',
-                  icon: Icons.check_circle_outline, color: successColor(context), count: _summary.succeeded),
-              const SizedBox(width: 10),
-              StatCard(label: 'Skipped', value: '${_summary.skipped}',
-                  icon: Icons.remove_circle_outline, color: warningColor(context), count: _summary.skipped),
-              const SizedBox(width: 10),
-              StatCard(label: 'Failed', value: '${_summary.failed}',
-                  icon: Icons.error_outline, color: dangerColor(context), count: _summary.failed),
-            ],
-          ),
+          const SizedBox(height: 14),
+          _paths.isEmpty && _summary.total == 0
+              ? _compactStats(cs)
+              : Row(
+                  children: [
+                    StatCard(label: 'Files queued', value: '$_preflightCount',
+                        icon: Icons.folder_open_outlined, color: cs.primary, count: _preflightCount),
+                    const SizedBox(width: 10),
+                    StatCard(label: 'Uploaded', value: '${_summary.succeeded}',
+                        icon: Icons.check_circle_outline, color: successColor(context), count: _summary.succeeded),
+                    const SizedBox(width: 10),
+                    StatCard(label: 'Skipped', value: '${_summary.skipped}',
+                        icon: Icons.remove_circle_outline, color: warningColor(context), count: _summary.skipped),
+                    const SizedBox(width: 10),
+                    StatCard(label: 'Failed', value: '${_summary.failed}',
+                        icon: Icons.error_outline, color: dangerColor(context), count: _summary.failed),
+                  ],
+                ),
         ],
+      );
+
+  Widget _compactStats(ColorScheme cs) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+        decoration: BoxDecoration(
+          color: cs.surface,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.45)),
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.info_outline, size: 15, color: cs.onSurfaceVariant),
+            const SizedBox(width: 8),
+            Text('No files selected yet', style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant)),
+            const Spacer(),
+            Text('0 · 0 · 0', style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant)),
+          ],
+        ),
       );
 
   Widget _statusStrip(ColorScheme cs) => PixieCard(
@@ -399,7 +439,9 @@ class _HomePageState extends State<HomePage> {
         ),
       );
 
-  Widget _dropZone(ColorScheme cs) => DropTarget(
+  Widget _dropZone(ColorScheme cs) {
+    if (Platform.isAndroid || Platform.isIOS) return _mobilePickArea(cs);
+    return DropTarget(
         onDragDone: (d) => _addPaths(d.files.map((f) => f.path).where((p) => p.isNotEmpty).toList()),
         onDragEntered: (_) => setState(() => _dragOver = true),
         onDragExited: (_) => setState(() => _dragOver = false),
@@ -450,6 +492,35 @@ class _HomePageState extends State<HomePage> {
               else
                 Text('or use the buttons below', style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant)),
             ],
+          ),
+        ),
+      );
+
+  }
+
+  Widget _mobilePickArea(ColorScheme cs) => Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () => _pickFiles(directory: false),
+          borderRadius: BorderRadius.circular(18),
+          child: Container(
+            height: 150,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: cs.surface,
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: cs.outlineVariant, width: 1.5),
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const PixieLogo(size: 44),
+                const SizedBox(height: 10),
+                Text('Select photos', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: cs.onSurface)),
+                const SizedBox(height: 4),
+                Text('Tap to choose images and videos', style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant)),
+              ],
+            ),
           ),
         ),
       );
@@ -524,7 +595,7 @@ class _HomePageState extends State<HomePage> {
           Tooltip(
             message: 'Create one album per source directory',
             child: FilterChip(
-              label: const Text('AUTO'),
+              label: const Text('Auto albums'),
               selected: _albumAuto,
               onSelected: (v) {
                 setState(() => _albumAuto = v);
@@ -539,13 +610,15 @@ class _HomePageState extends State<HomePage> {
             label: const Text('Upload'),
             style: FilledButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18)),
           ),
-          const SizedBox(width: 10),
-          OutlinedButton.icon(
-            onPressed: _running ? cancelUpload : null,
-            icon: const Icon(Icons.stop_rounded, size: 18),
-            label: const Text('Cancel'),
-            style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 18)),
-          ),
+          if (_running) ...[
+            const SizedBox(width: 10),
+            OutlinedButton.icon(
+              onPressed: cancelUpload,
+              icon: const Icon(Icons.stop_rounded, size: 18),
+              label: const Text('Cancel'),
+              style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 18)),
+            ),
+          ],
         ],
       );
 
@@ -567,6 +640,12 @@ class _HomePageState extends State<HomePage> {
                   const SizedBox(width: 8),
                   Text('Overall progress', style: TextStyle(fontWeight: FontWeight.w700, color: cs.onSurface)),
                   const Spacer(),
+                  if (_running)
+                    IconButton(
+                      tooltip: _paused ? 'Resume upload' : 'Pause upload',
+                      icon: Icon(_paused ? Icons.play_arrow_rounded : Icons.pause_rounded),
+                      onPressed: _togglePause,
+                    ),
                   SizedBox(
                     width: 38,
                     height: 38,
@@ -737,7 +816,7 @@ class _HomePageState extends State<HomePage> {
               return Padding(padding: const EdgeInsets.symmetric(vertical: 5), child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(icon, size: 18, color: color),
+                  _fileThumb(r.path, icon, color),
                   const SizedBox(width: 10),
                   Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                     Text(r.path.split(Platform.pathSeparator).last,
@@ -762,6 +841,24 @@ class _HomePageState extends State<HomePage> {
       3 => r.isError,
       _ => true,
     }).toList();
+  }
+
+  Widget _fileThumb(String path, IconData fallback, Color color) {
+    final ext = path.split('.').last.toLowerCase();
+    const imageExts = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'heic', 'heif', 'bmp'];
+    if (!imageExts.contains(ext)) {
+      return Icon(fallback, size: 18, color: color);
+    }
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(5),
+      child: Image.file(
+        File(path),
+        width: 30,
+        height: 30,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => Icon(fallback, size: 18, color: color),
+      ),
+    );
   }
 
   String _formatBytes(int bytes) {

@@ -85,3 +85,9 @@ Future<List<FilePreview>> previewFilesDetailed({
 
 Future<UploadProgress> getProgress() =>
     RustLib.instance.api.crateApiGetProgress();
+
+Future<void> pauseUpload() => RustLib.instance.api.crateApiPauseUpload();
+
+Future<void> resumeUpload() => RustLib.instance.api.crateApiResumeUpload();
+
+Future<bool> isUploadPaused() => RustLib.instance.api.crateApiIsUploadPaused();

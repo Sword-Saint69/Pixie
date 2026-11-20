@@ -98,7 +98,7 @@ class _SettingsState extends State<SettingsPage> {
               const SizedBox(height: 6),
               Text(
                 'Make Pixie yours',
-                style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: cs.onSurface),
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: cs.onSurface),
               ),
               const SizedBox(height: 4),
               Text(
@@ -133,52 +133,16 @@ class _SettingsState extends State<SettingsPage> {
     );
   }
 
-  Widget _settingsBar(ColorScheme cs) => Container(
-        padding: const EdgeInsets.all(4),
-        decoration: BoxDecoration(
-          color: cs.surface,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.5)),
-        ),
-        child: Row(
-          children: [
-            for (final section in _Section.values)
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 2),
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 150),
-                    decoration: BoxDecoration(
-                      color: _section == section ? cs.primary.withValues(alpha: 0.12) : Colors.transparent,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: TextButton.icon(
-                      onPressed: () => setState(() => _section = section),
-                      icon: Icon(
-                        switch (section) {
-                          _Section.appearance => Icons.palette_outlined,
-                          _Section.upload => Icons.cloud_upload_outlined,
-                          _Section.advanced => Icons.tune_rounded,
-                        },
-                        size: 17,
-                        color: _section == section ? cs.primary : cs.onSurfaceVariant,
-                      ),
-                      label: Text(
-                        switch (section) {
-                          _Section.appearance => 'Appearance',
-                          _Section.upload => 'Upload',
-                          _Section.advanced => 'Advanced',
-                        },
-                        style: TextStyle(
-                          color: _section == section ? cs.primary : cs.onSurfaceVariant,
-                          fontWeight: _section == section ? FontWeight.w700 : FontWeight.w500,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-          ],
+  Widget _settingsBar(ColorScheme cs) => LayoutBuilder(
+        builder: (context, constraints) => SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: PillSwitch<_Section>(
+            values: _Section.values,
+            selected: _section,
+            labels: const ['Look', 'Upload', 'More'],
+            icons: const [Icons.palette_outlined, Icons.cloud_upload_outlined, Icons.tune_rounded],
+            onChanged: (v) => setState(() => _section = v),
+          ),
         ),
       );
 
@@ -227,26 +191,55 @@ class _SettingsState extends State<SettingsPage> {
             ],
           ),
           const SizedBox(height: 24),
-          Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: cs.primary.withValues(alpha: 0.06),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Row(
+          _themePreview(cs),
+        ],
+      );
+
+  Widget _themePreview(ColorScheme cs) => Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: cs.surfaceContainerHighest.withValues(alpha: 0.35),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.4)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const MicroLabel('Live preview'),
+            const SizedBox(height: 10),
+            Row(
               children: [
-                Icon(Icons.auto_awesome_rounded, color: cs.primary),
+                Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: cs.primary.withValues(alpha: 0.14),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(Icons.auto_awesome_rounded, color: cs.primary, size: 20),
+                ),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: Text(
-                    'Current theme: ${widget.theme.modeLabel} · ${widget.theme.accentLabel}',
-                    style: TextStyle(color: cs.onSurface, fontSize: 13),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('${widget.theme.modeLabel} · ${widget.theme.accentLabel}',
+                          style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: cs.onSurface)),
+                      const SizedBox(height: 2),
+                      Text('Buttons, highlights and icon states update instantly.',
+                          style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant)),
+                    ],
                   ),
+                ),
+                FilledButton(
+                  onPressed: () {},
+                  style: FilledButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10)),
+                  child: const Text('Preview'),
                 ),
               ],
             ),
-          ),
-        ],
+          ],
+        ),
       );
 
   Widget _choiceCard({

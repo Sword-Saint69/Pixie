@@ -245,12 +245,14 @@ class PillSwitch<T> extends StatelessWidget {
     required this.selected,
     required this.labels,
     required this.onChanged,
+    this.icons,
   });
 
   final List<T> values;
   final T selected;
   final List<String> labels;
   final ValueChanged<T> onChanged;
+  final List<IconData>? icons;
 
   @override
   Widget build(BuildContext context) {
@@ -277,13 +279,24 @@ class PillSwitch<T> extends StatelessWidget {
                       ? [BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 6)]
                       : null,
                 ),
-                child: Text(
-                  labels[i],
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: selected == values[i] ? FontWeight.w700 : FontWeight.w500,
-                    color: selected == values[i] ? cs.onSurface : cs.onSurfaceVariant,
-                  ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (icons != null)
+                      Padding(
+                        padding: const EdgeInsets.only(right: 6),
+                        child: Icon(icons![i], size: 14),
+                      ),
+                    Text(
+                      labels[i],
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: selected == values[i] ? FontWeight.w700 : FontWeight.w500,
+                        color: selected == values[i] ? cs.onSurface : cs.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),

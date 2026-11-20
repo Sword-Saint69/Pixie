@@ -22,6 +22,9 @@ class AppShell extends StatefulWidget {
 class _AppShellState extends State<AppShell> {
   int _index = 0;
   bool _running = false;
+  bool _paused = false;
+  int _done = 0;
+  int _total = 0;
   Timer? _statusTimer;
 
   static const _titles = ['Upload', 'Settings', 'Accounts', 'About'];
@@ -32,7 +35,16 @@ class _AppShellState extends State<AppShell> {
     _statusTimer = Timer.periodic(const Duration(seconds: 1), (_) async {
       try {
         final running = await isUploadRunning();
-        if (mounted && running != _running) setState(() => _running = running);
+        final paused = await isUploadPaused();
+        final summary = await getSummary();
+        if (mounted) {
+          setState(() {
+            _running = running;
+            _paused = paused;
+            _done = summary.succeeded + summary.skipped + summary.failed;
+            _total = summary.total;
+          });
+        }
       } catch (_) {}
     });
   }
@@ -95,12 +107,7 @@ class _AppShellState extends State<AppShell> {
             ));
           },
         ),
-        IconButton(
-          tooltip: 'Settings',
-          icon: const Icon(Icons.settings_outlined),
-          onPressed: () => _go(1),
-        ),
-        const SizedBox(width: 6),
+        const SizedBox(width: 8),
       ],
     );
 
@@ -140,24 +147,39 @@ class _AppShellState extends State<AppShell> {
   }
 
   Widget _statusPill(ColorScheme cs) {
-    final color = _running ? Colors.amber.shade700 : Colors.green.shade700;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.10),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(width: 7, height: 7, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
-          const SizedBox(width: 8),
-          Text(_running ? 'Uploading' : 'Ready',
-              style: TextStyle(color: color, fontWeight: FontWeight.w600, fontSize: 12)),
-        ],
+    final color = _paused
+        ? Colors.amber.shade700
+        : _running
+            ? Colors.blue.shade700
+            : Colors.green.shade700;
+    final label = _paused
+        ? 'Paused'
+        : _running
+            ? 'Uploading $_done/$_total'
+            : _total > 0
+                ? 'Last run: $_done/$_total'
+                : 'Ready';
+    return GestureDetector(
+      onTap: () => _go(0),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.10),
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(width: 7, height: 7, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+            const SizedBox(width: 8),
+            Text(label,
+                style: TextStyle(color: color, fontWeight: FontWeight.w600, fontSize: 12)),
+          ],
+        ),
       ),
     );
   }
+
 }
 
 class _Sidebar extends StatelessWidget {

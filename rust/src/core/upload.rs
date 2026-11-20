@@ -110,6 +110,7 @@ pub struct UploadState {
     pub summary: RwLock<CoreSummary>,
     pub cancel: Mutex<Option<tokio_util::sync::CancellationToken>>,
     pub running: AtomicBool,
+    paused: AtomicBool,
     started_at: Mutex<Option<Instant>>,
     total_bytes: AtomicI64,
     uploaded_bytes: AtomicI64,
@@ -122,6 +123,7 @@ impl Default for UploadState {
             summary: RwLock::new(CoreSummary::default()),
             cancel: Mutex::new(None),
             running: AtomicBool::new(false),
+            paused: AtomicBool::new(false),
             started_at: Mutex::new(None),
             total_bytes: AtomicI64::new(0),
             uploaded_bytes: AtomicI64::new(0),
@@ -197,6 +199,24 @@ impl UploadState {
         self.running.load(Ordering::Acquire)
     }
 
+    pub fn is_paused(&self) -> bool {
+        self.paused.load(Ordering::Acquire)
+    }
+
+    pub fn pause(&self) {
+        self.paused.store(true, Ordering::Release);
+    }
+
+    pub fn resume(&self) {
+        self.paused.store(false, Ordering::Release);
+    }
+
+    pub async fn wait_if_paused(&self) {
+        while self.paused.load(Ordering::Acquire) {
+            tokio::time::sleep(std::time::Duration::from_millis(120)).await;
+        }
+    }
+
     pub fn cancel(&self) {
         let token = self.cancel.lock().expect("cancel lock poisoned").clone();
         if let Some(token) = token {
@@ -227,6 +247,7 @@ pub fn start_upload(
     *state.cancel.lock().expect("cancel lock poisoned") = Some(token.clone());
     *state.summary.blocking_write() = CoreSummary::default();
     state.reset_progress();
+    state.resume();
     state.events.lock().expect("event lock poisoned").clear();
     state.running.store(true, Ordering::Release);
 
@@ -288,6 +309,7 @@ async fn run_upload(
                 if cancel.is_cancelled() {
                     return CoreUploadResult::default();
                 }
+                state.wait_if_paused().await;
                 let api = match Api::new(
                     &options.credential,
                     &options.proxy,
@@ -441,6 +463,7 @@ async fn upload_single_file(
     }
     .await;
 
+    state.wait_if_paused().await;
     state.emit_sync(thread("hashing", "Hashing...".into()));
     let sha1 = match sha1_file(path, cancel).await {
         Ok(hash) => hash,
@@ -456,6 +479,7 @@ async fn upload_single_file(
     }
 
     if !options.force_upload {
+        state.wait_if_paused().await;
         state.emit_sync(thread("checking", "Checking if file exists in library...".into()));
         match api.find_remote_media_by_hash(&sha1).await {
             Ok(key) if !key.is_empty() => {
@@ -501,6 +525,7 @@ async fn upload_single_file(
         ..Default::default()
     });
 
+    state.wait_if_paused().await;
     let upload_token = match api.get_upload_token(&sha1_b64, size).await {
         Ok(token) => token,
         Err(err) => {
@@ -541,6 +566,7 @@ async fn upload_single_file(
             return result;
         }
     };
+    state.wait_if_paused().await;
     state.emit_sync(thread("finalizing", "Committing upload...".into()));
     match api
         .commit_upload(&finalize, &file_name, &sha1, timestamp)
