@@ -66,6 +66,8 @@ pub struct UploadOptions {
     pub delete_from_host: bool,
     pub disable_unsupported_files_filter: bool,
     pub set_date_from_filename: bool,
+    pub auto_retry: bool,
+    pub max_auto_retries: usize,
     pub album_name: String,
     pub album_auto: bool,
 }
@@ -84,6 +86,8 @@ impl UploadOptions {
             delete_from_host: prefs.delete_from_host,
             disable_unsupported_files_filter: prefs.disable_unsupported_files_filter,
             set_date_from_filename: prefs.set_date_from_filename,
+            auto_retry: prefs.auto_retry,
+            max_auto_retries: prefs.max_auto_retries.max(0) as usize,
             album_name: String::new(),
             album_auto: false,
         }
@@ -108,6 +112,7 @@ pub struct CoreFilePreview {
 pub struct UploadState {
     pub events: Mutex<VecDeque<CoreUploadEvent>>,
     pub summary: RwLock<CoreSummary>,
+    outcomes: Mutex<HashMap<String, CoreUploadResult>>,
     pub cancel: Mutex<Option<tokio_util::sync::CancellationToken>>,
     pub running: AtomicBool,
     paused: AtomicBool,
@@ -121,6 +126,7 @@ impl Default for UploadState {
         Self {
             events: Mutex::new(VecDeque::new()),
             summary: RwLock::new(CoreSummary::default()),
+            outcomes: Mutex::new(HashMap::new()),
             cancel: Mutex::new(None),
             running: AtomicBool::new(false),
             paused: AtomicBool::new(false),
@@ -246,6 +252,11 @@ pub fn start_upload(
     let token = tokio_util::sync::CancellationToken::new();
     *state.cancel.lock().expect("cancel lock poisoned") = Some(token.clone());
     *state.summary.blocking_write() = CoreSummary::default();
+    state
+        .outcomes
+        .lock()
+        .expect("outcome lock poisoned")
+        .clear();
     state.reset_progress();
     state.resume();
     state.events.lock().expect("event lock poisoned").clear();
@@ -300,48 +311,41 @@ async fn run_upload(
         return Ok(());
     }
 
-    let worker_count = options.threads.max(1);
-    let results: Vec<CoreUploadResult> = futures::stream::iter(files.into_iter().enumerate())
-        .map(|(index, path)| {
-            let worker = (index % worker_count) as i32;
-            let options = options.clone();
-            let state = state.clone();
-            let cancel = cancel.clone();
-            async move {
-                if cancel.is_cancelled() {
-                    return CoreUploadResult::default();
-                }
-                state.wait_if_paused().await;
-                let result = match Api::new(
-                    &options.credential,
-                    &options.proxy,
-                    options.saver,
-                    options.use_quota,
-                ) {
-                    Ok(api) => {
-                        upload_single_file(&api, &path, &options, &state, worker, &cancel).await
-                    }
-                    Err(err) => CoreUploadResult {
-                        path: path.display().to_string(),
-                        is_error: true,
-                        error_message: err.to_string(),
-                        ..Default::default()
-                    },
-                };
-                record_result(&state, &result).await;
-                result
-            }
-        })
-        .buffer_unordered(options.threads)
-        .collect()
-        .await;
-
-    let mut successful = HashMap::new();
-    for result in &results {
-        if !result.is_error && !result.skipped && !result.media_key.is_empty() {
-            successful.insert(result.path.clone(), result.media_key.clone());
+    let mut pending = files.clone();
+    let mut attempt = 1usize;
+    loop {
+        let results = run_batch(state, &options, &cancel, &pending, attempt).await;
+        let failed: Vec<PathBuf> = results
+            .iter()
+            .filter(|r| r.is_error && !r.path.is_empty())
+            .map(|r| PathBuf::from(&r.path))
+            .collect();
+        let can_retry = options.auto_retry
+            && attempt <= options.max_auto_retries
+            && !failed.is_empty()
+            && !cancel.is_cancelled();
+        if !can_retry {
+            break;
         }
+        attempt += 1;
+        state.emit_sync(CoreUploadEvent {
+            event_type: "warning".into(),
+            message: format!("Retrying {} failed file(s) (round {attempt})", failed.len()),
+            ..Default::default()
+        });
+        tokio::time::sleep(std::time::Duration::from_secs(2 * attempt as u64)).await;
+        pending = failed;
     }
+
+    let successful: HashMap<String, String> = state
+        .summary
+        .read()
+        .await
+        .results
+        .iter()
+        .filter(|r| !r.is_error && !r.skipped && !r.media_key.is_empty())
+        .map(|r| (r.path.clone(), r.media_key.clone()))
+        .collect();
 
     if !successful.is_empty() && !cancel.is_cancelled() {
         let api = Api::new(
@@ -379,21 +383,79 @@ async fn run_upload(
     Ok(())
 }
 
+async fn run_batch(
+    state: &Arc<UploadState>,
+    options: &UploadOptions,
+    cancel: &tokio_util::sync::CancellationToken,
+    paths: &[PathBuf],
+    attempt: usize,
+) -> Vec<CoreUploadResult> {
+    let worker_count = options.threads.max(1);
+    futures::stream::iter(paths.iter().cloned().enumerate())
+        .map(|(index, path)| {
+            let worker = (index % worker_count) as i32;
+            let options = options.clone();
+            let state = state.clone();
+            let cancel = cancel.clone();
+            async move {
+                if cancel.is_cancelled() {
+                    return CoreUploadResult::default();
+                }
+                state.wait_if_paused().await;
+                let result = match Api::new(
+                    &options.credential,
+                    &options.proxy,
+                    options.saver,
+                    options.use_quota,
+                ) {
+                    Ok(api) => {
+                        upload_single_file(&api, &path, &options, &state, worker, &cancel).await
+                    }
+                    Err(err) => CoreUploadResult {
+                        path: path.display().to_string(),
+                        is_error: true,
+                        error_message: err.to_string(),
+                        ..Default::default()
+                    },
+                };
+                let mut result = result;
+                if result.is_error && attempt > 1 {
+                    result.error_message =
+                        format!("attempt {attempt} failed: {}", result.error_message);
+                }
+                record_result(&state, &result).await;
+                result
+            }
+        })
+        .buffer_unordered(options.threads)
+        .collect()
+        .await
+}
+
 async fn record_result(state: &UploadState, result: &CoreUploadResult) {
+    if result.path.is_empty() {
+        return;
+    }
+    let snapshot: Vec<CoreUploadResult> = {
+        let mut outcomes = state.outcomes.lock().expect("outcome lock poisoned");
+        outcomes.insert(result.path.clone(), result.clone());
+        outcomes.values().cloned().collect()
+    };
     {
         let mut summary = state.summary.write().await;
-        if result.is_error {
-            summary.failed += 1;
-        } else if result.skipped {
-            summary.skipped += 1;
+        summary.succeeded = snapshot
+            .iter()
+            .filter(|r| !r.is_error && !r.skipped)
+            .count() as i32;
+        summary.skipped = snapshot.iter().filter(|r| r.skipped).count() as i32;
+        summary.failed = snapshot.iter().filter(|r| r.is_error).count() as i32;
+        summary.results = snapshot;
+        if result.skipped {
             let bytes = std::fs::metadata(&result.path)
                 .map(|m| m.len() as i64)
                 .unwrap_or(0);
             state.add_uploaded_bytes(bytes);
-        } else {
-            summary.succeeded += 1;
         }
-        summary.results.push(result.clone());
     }
     state.emit_sync(CoreUploadEvent {
         event_type: "file_result".into(),
@@ -781,6 +843,30 @@ mod tests {
         assert_eq!(summary.succeeded, 1);
         assert_eq!(summary.results.len(), 1);
         assert_eq!(summary.results[0].media_key, "key");
+    }
+
+    #[tokio::test]
+    async fn retry_replaces_failed_outcome_instead_of_double_counting() {
+        let state = UploadState::default();
+        let failed = CoreUploadResult {
+            path: "/photos/a.jpg".into(),
+            is_error: true,
+            error_message: "network".into(),
+            ..Default::default()
+        };
+        record_result(&state, &failed).await;
+        assert_eq!(state.summary.read().await.failed, 1);
+
+        let success = CoreUploadResult {
+            path: "/photos/a.jpg".into(),
+            media_key: "key".into(),
+            ..Default::default()
+        };
+        record_result(&state, &success).await;
+        let summary = state.summary.read().await;
+        assert_eq!(summary.failed, 0);
+        assert_eq!(summary.succeeded, 1);
+        assert_eq!(summary.results.len(), 1);
     }
 
     #[test]

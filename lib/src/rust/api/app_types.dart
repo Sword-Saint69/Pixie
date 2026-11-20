@@ -41,6 +41,8 @@ class AppSettings {
   final bool deleteFromHost;
   final bool disableUnsupportedFilesFilter;
   final bool setDateFromFilename;
+  final bool autoRetry;
+  final int maxAutoRetries;
   final String excludePattern;
 
   const AppSettings({
@@ -56,6 +58,8 @@ class AppSettings {
     required this.deleteFromHost,
     required this.disableUnsupportedFilesFilter,
     required this.setDateFromFilename,
+    required this.autoRetry,
+    required this.maxAutoRetries,
     required this.excludePattern,
   });
 
@@ -76,6 +80,8 @@ class AppSettings {
       deleteFromHost.hashCode ^
       disableUnsupportedFilesFilter.hashCode ^
       setDateFromFilename.hashCode ^
+      autoRetry.hashCode ^
+      maxAutoRetries.hashCode ^
       excludePattern.hashCode;
 
   @override
@@ -96,6 +102,8 @@ class AppSettings {
           disableUnsupportedFilesFilter ==
               other.disableUnsupportedFilesFilter &&
           setDateFromFilename == other.setDateFromFilename &&
+          autoRetry == other.autoRetry &&
+          maxAutoRetries == other.maxAutoRetries &&
           excludePattern == other.excludePattern;
 }
 

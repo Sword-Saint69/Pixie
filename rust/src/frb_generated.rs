@@ -912,6 +912,8 @@ impl SseDecode for crate::api::app_types::AppSettings {
         let mut var_deleteFromHost = <bool>::sse_decode(deserializer);
         let mut var_disableUnsupportedFilesFilter = <bool>::sse_decode(deserializer);
         let mut var_setDateFromFilename = <bool>::sse_decode(deserializer);
+        let mut var_autoRetry = <bool>::sse_decode(deserializer);
+        let mut var_maxAutoRetries = <i32>::sse_decode(deserializer);
         let mut var_excludePattern = <String>::sse_decode(deserializer);
         return crate::api::app_types::AppSettings {
             proxy: var_proxy,
@@ -926,6 +928,8 @@ impl SseDecode for crate::api::app_types::AppSettings {
             delete_from_host: var_deleteFromHost,
             disable_unsupported_files_filter: var_disableUnsupportedFilesFilter,
             set_date_from_filename: var_setDateFromFilename,
+            auto_retry: var_autoRetry,
+            max_auto_retries: var_maxAutoRetries,
             exclude_pattern: var_excludePattern,
         };
     }
@@ -1075,6 +1079,8 @@ impl SseDecode for crate::core::config::Preferences {
         let mut var_deleteFromHost = <bool>::sse_decode(deserializer);
         let mut var_disableUnsupportedFilesFilter = <bool>::sse_decode(deserializer);
         let mut var_setDateFromFilename = <bool>::sse_decode(deserializer);
+        let mut var_autoRetry = <bool>::sse_decode(deserializer);
+        let mut var_maxAutoRetries = <i32>::sse_decode(deserializer);
         let mut var_excludePattern = <String>::sse_decode(deserializer);
         return crate::core::config::Preferences {
             proxy: var_proxy,
@@ -1089,6 +1095,8 @@ impl SseDecode for crate::core::config::Preferences {
             delete_from_host: var_deleteFromHost,
             disable_unsupported_files_filter: var_disableUnsupportedFilesFilter,
             set_date_from_filename: var_setDateFromFilename,
+            auto_retry: var_autoRetry,
+            max_auto_retries: var_maxAutoRetries,
             exclude_pattern: var_excludePattern,
         };
     }
@@ -1301,6 +1309,8 @@ impl flutter_rust_bridge::IntoDart for crate::api::app_types::AppSettings {
                 .into_into_dart()
                 .into_dart(),
             self.set_date_from_filename.into_into_dart().into_dart(),
+            self.auto_retry.into_into_dart().into_dart(),
+            self.max_auto_retries.into_into_dart().into_dart(),
             self.exclude_pattern.into_into_dart().into_dart(),
         ]
         .into_dart()
@@ -1383,6 +1393,8 @@ impl flutter_rust_bridge::IntoDart for crate::core::config::Preferences {
                 .into_into_dart()
                 .into_dart(),
             self.set_date_from_filename.into_into_dart().into_dart(),
+            self.auto_retry.into_into_dart().into_dart(),
+            self.max_auto_retries.into_into_dart().into_dart(),
             self.exclude_pattern.into_into_dart().into_dart(),
         ]
         .into_dart()
@@ -1545,6 +1557,8 @@ impl SseEncode for crate::api::app_types::AppSettings {
         <bool>::sse_encode(self.delete_from_host, serializer);
         <bool>::sse_encode(self.disable_unsupported_files_filter, serializer);
         <bool>::sse_encode(self.set_date_from_filename, serializer);
+        <bool>::sse_encode(self.auto_retry, serializer);
+        <i32>::sse_encode(self.max_auto_retries, serializer);
         <String>::sse_encode(self.exclude_pattern, serializer);
     }
 }
@@ -1663,6 +1677,8 @@ impl SseEncode for crate::core::config::Preferences {
         <bool>::sse_encode(self.delete_from_host, serializer);
         <bool>::sse_encode(self.disable_unsupported_files_filter, serializer);
         <bool>::sse_encode(self.set_date_from_filename, serializer);
+        <bool>::sse_encode(self.auto_retry, serializer);
+        <i32>::sse_encode(self.max_auto_retries, serializer);
         <String>::sse_encode(self.exclude_pattern, serializer);
     }
 }

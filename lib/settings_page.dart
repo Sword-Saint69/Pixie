@@ -64,6 +64,8 @@ class _SettingsState extends State<SettingsPage> {
     bool? deleteFromHost,
     bool? disableUnsupportedFilesFilter,
     bool? setDateFromFilename,
+    bool? autoRetry,
+    int? maxAutoRetries,
     String? excludePattern,
   }) {
     final s = _settings!;
@@ -83,6 +85,8 @@ class _SettingsState extends State<SettingsPage> {
       disableUnsupportedFilesFilter:
           disableUnsupportedFilesFilter ?? s.disableUnsupportedFilesFilter,
       setDateFromFilename: setDateFromFilename ?? s.setDateFromFilename,
+      autoRetry: autoRetry ?? s.autoRetry,
+      maxAutoRetries: maxAutoRetries ?? s.maxAutoRetries,
       excludePattern: excludePattern ?? s.excludePattern,
     );
   }

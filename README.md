@@ -64,6 +64,7 @@ with an action.
 - **Preflight** — the queue is measured before upload (file count + total bytes), with size/speed/ETA during a run.
 - **Queue persistence** — paths, album name and AUTO mode survive restarts via `shared_preferences`.
 - **UX review pass** — short icon tabs in Settings, full-width ellipsised emails with an overflow menu, compact empty stats, mobile "Select photos" area, single primary Upload button, per-file thumbnails, pause/resume (Rust-backed), a meaningful tappable status pill, haptics, and an About page with changelog, updates, feedback, licenses and copy-debug-info.
+- **Automatic retry** — failed files are re-queued in the Rust upload manager (default 2 rounds, 2s/4s backoff), with a progress warning event per round. Final outcomes are keyed by path, so a later success replaces an earlier failure in the counters and session map instead of double-counting. Toggle under Settings → Upload → Retry policy; CLI flags `--retry/--max-retries`.
 - **Rust-owned telemetry** — preflight file sizing, progress totals, elapsed time, speed and ETA are computed in `rust/src/core/upload.rs` and exposed through `previewFilesDetailed()`, `getProgress()` and `coreInfo()`. The About page reads the live crate version, bridge version and target from Rust.
 - **Dark theme** — layered near-black surfaces, lighter accent, brighter semantic green/amber/red and softer outlines for contrast.
 - **Motion** — animated page transitions, drop-zone hover scale, expanding progress/activity panels and theme-change snackbars.

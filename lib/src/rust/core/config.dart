@@ -20,6 +20,8 @@ class Preferences {
   final bool deleteFromHost;
   final bool disableUnsupportedFilesFilter;
   final bool setDateFromFilename;
+  final bool autoRetry;
+  final int maxAutoRetries;
   final String excludePattern;
 
   const Preferences({
@@ -35,6 +37,8 @@ class Preferences {
     required this.deleteFromHost,
     required this.disableUnsupportedFilesFilter,
     required this.setDateFromFilename,
+    required this.autoRetry,
+    required this.maxAutoRetries,
     required this.excludePattern,
   });
 
@@ -52,6 +56,8 @@ class Preferences {
       deleteFromHost.hashCode ^
       disableUnsupportedFilesFilter.hashCode ^
       setDateFromFilename.hashCode ^
+      autoRetry.hashCode ^
+      maxAutoRetries.hashCode ^
       excludePattern.hashCode;
 
   @override
@@ -72,5 +78,7 @@ class Preferences {
           disableUnsupportedFilesFilter ==
               other.disableUnsupportedFilesFilter &&
           setDateFromFilename == other.setDateFromFilename &&
+          autoRetry == other.autoRetry &&
+          maxAutoRetries == other.maxAutoRetries &&
           excludePattern == other.excludePattern;
 }

@@ -31,6 +31,8 @@ pub struct Preferences {
     pub delete_from_host: bool,
     pub disable_unsupported_files_filter: bool,
     pub set_date_from_filename: bool,
+    pub auto_retry: bool,
+    pub max_auto_retries: i32,
     pub exclude_pattern: String,
 }
 
@@ -49,6 +51,8 @@ impl Default for Preferences {
             delete_from_host: false,
             disable_unsupported_files_filter: false,
             set_date_from_filename: false,
+            auto_retry: true,
+            max_auto_retries: 2,
             exclude_pattern: String::new(),
         }
     }

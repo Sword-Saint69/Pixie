@@ -881,8 +881,8 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   AppSettings dco_decode_app_settings(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     final arr = raw as List<dynamic>;
-    if (arr.length != 13)
-      throw Exception('unexpected arr length: expect 13 but see ${arr.length}');
+    if (arr.length != 15)
+      throw Exception('unexpected arr length: expect 15 but see ${arr.length}');
     return AppSettings(
       proxy: dco_decode_String(arr[0]),
       useQuota: dco_decode_bool(arr[1]),
@@ -896,7 +896,9 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       deleteFromHost: dco_decode_bool(arr[9]),
       disableUnsupportedFilesFilter: dco_decode_bool(arr[10]),
       setDateFromFilename: dco_decode_bool(arr[11]),
-      excludePattern: dco_decode_String(arr[12]),
+      autoRetry: dco_decode_bool(arr[12]),
+      maxAutoRetries: dco_decode_i_32(arr[13]),
+      excludePattern: dco_decode_String(arr[14]),
     );
   }
 
@@ -990,8 +992,8 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   Preferences dco_decode_preferences(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     final arr = raw as List<dynamic>;
-    if (arr.length != 13)
-      throw Exception('unexpected arr length: expect 13 but see ${arr.length}');
+    if (arr.length != 15)
+      throw Exception('unexpected arr length: expect 15 but see ${arr.length}');
     return Preferences(
       proxy: dco_decode_String(arr[0]),
       useQuota: dco_decode_bool(arr[1]),
@@ -1005,7 +1007,9 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       deleteFromHost: dco_decode_bool(arr[9]),
       disableUnsupportedFilesFilter: dco_decode_bool(arr[10]),
       setDateFromFilename: dco_decode_bool(arr[11]),
-      excludePattern: dco_decode_String(arr[12]),
+      autoRetry: dco_decode_bool(arr[12]),
+      maxAutoRetries: dco_decode_i_32(arr[13]),
+      excludePattern: dco_decode_String(arr[14]),
     );
   }
 
@@ -1133,6 +1137,8 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     var var_deleteFromHost = sse_decode_bool(deserializer);
     var var_disableUnsupportedFilesFilter = sse_decode_bool(deserializer);
     var var_setDateFromFilename = sse_decode_bool(deserializer);
+    var var_autoRetry = sse_decode_bool(deserializer);
+    var var_maxAutoRetries = sse_decode_i_32(deserializer);
     var var_excludePattern = sse_decode_String(deserializer);
     return AppSettings(
       proxy: var_proxy,
@@ -1147,6 +1153,8 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       deleteFromHost: var_deleteFromHost,
       disableUnsupportedFilesFilter: var_disableUnsupportedFilesFilter,
       setDateFromFilename: var_setDateFromFilename,
+      autoRetry: var_autoRetry,
+      maxAutoRetries: var_maxAutoRetries,
       excludePattern: var_excludePattern,
     );
   }
@@ -1284,6 +1292,8 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     var var_deleteFromHost = sse_decode_bool(deserializer);
     var var_disableUnsupportedFilesFilter = sse_decode_bool(deserializer);
     var var_setDateFromFilename = sse_decode_bool(deserializer);
+    var var_autoRetry = sse_decode_bool(deserializer);
+    var var_maxAutoRetries = sse_decode_i_32(deserializer);
     var var_excludePattern = sse_decode_String(deserializer);
     return Preferences(
       proxy: var_proxy,
@@ -1298,6 +1308,8 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       deleteFromHost: var_deleteFromHost,
       disableUnsupportedFilesFilter: var_disableUnsupportedFilesFilter,
       setDateFromFilename: var_setDateFromFilename,
+      autoRetry: var_autoRetry,
+      maxAutoRetries: var_maxAutoRetries,
       excludePattern: var_excludePattern,
     );
   }
@@ -1442,6 +1454,8 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     sse_encode_bool(self.deleteFromHost, serializer);
     sse_encode_bool(self.disableUnsupportedFilesFilter, serializer);
     sse_encode_bool(self.setDateFromFilename, serializer);
+    sse_encode_bool(self.autoRetry, serializer);
+    sse_encode_i_32(self.maxAutoRetries, serializer);
     sse_encode_String(self.excludePattern, serializer);
   }
 
@@ -1570,6 +1584,8 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     sse_encode_bool(self.deleteFromHost, serializer);
     sse_encode_bool(self.disableUnsupportedFilesFilter, serializer);
     sse_encode_bool(self.setDateFromFilename, serializer);
+    sse_encode_bool(self.autoRetry, serializer);
+    sse_encode_i_32(self.maxAutoRetries, serializer);
     sse_encode_String(self.excludePattern, serializer);
   }
 

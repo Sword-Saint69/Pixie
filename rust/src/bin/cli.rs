@@ -54,6 +54,11 @@ enum Commands {
         saver: bool,
         #[arg(long)]
         use_quota: bool,
+        /// Retry failed files automatically (default: on)
+        #[arg(long, default_value_t = true)]
+        retry: bool,
+        #[arg(long, default_value_t = 2)]
+        max_retries: u32,
     },
     /// Manage stored Google accounts
     Creds {
@@ -109,6 +114,8 @@ fn run(cli: Cli) -> Result<()> {
             proxy,
             saver,
             use_quota,
+            retry,
+            max_retries,
         } => {
             if paths.is_empty() {
                 bail!("provide at least one path");
@@ -144,6 +151,8 @@ fn run(cli: Cli) -> Result<()> {
                 delete_from_host: prefs.delete_from_host,
                 disable_unsupported_files_filter: prefs.disable_unsupported_files_filter,
                 set_date_from_filename: prefs.set_date_from_filename,
+                auto_retry: retry,
+                max_auto_retries: max_retries as usize,
                 album_name: album.unwrap_or_default(),
                 album_auto,
             };

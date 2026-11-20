@@ -16,6 +16,8 @@ pub struct AppSettings {
     pub delete_from_host: bool,
     pub disable_unsupported_files_filter: bool,
     pub set_date_from_filename: bool,
+    pub auto_retry: bool,
+    pub max_auto_retries: i32,
     pub exclude_pattern: String,
 }
 
@@ -34,6 +36,8 @@ impl From<Preferences> for AppSettings {
             delete_from_host: p.delete_from_host,
             disable_unsupported_files_filter: p.disable_unsupported_files_filter,
             set_date_from_filename: p.set_date_from_filename,
+            auto_retry: p.auto_retry,
+            max_auto_retries: p.max_auto_retries,
             exclude_pattern: p.exclude_pattern,
         }
     }
@@ -54,6 +58,8 @@ impl AppSettings {
             delete_from_host: self.delete_from_host,
             disable_unsupported_files_filter: self.disable_unsupported_files_filter,
             set_date_from_filename: self.set_date_from_filename,
+            auto_retry: self.auto_retry,
+            max_auto_retries: self.max_auto_retries,
             exclude_pattern: self.exclude_pattern,
         }
     }
