@@ -9,7 +9,11 @@ use std::sync::Arc;
 use std::time::Duration;
 
 #[derive(Parser)]
-#[command(name = "gotohp-rs-cli", version, about = "Unofficial Google Photos uploader (Rust core)")]
+#[command(
+    name = "gotohp-rs-cli",
+    version,
+    about = "Unofficial Google Photos uploader (Rust core)"
+)]
 struct Cli {
     /// Path to gotohp.config (portable file next to the executable wins by default)
     #[arg(short, long, global = true)]
@@ -63,7 +67,11 @@ enum Commands {
 #[derive(Subcommand)]
 enum CredsAction {
     /// Add an oauth_token cookie value or a raw credential query string
-    Add { value: String, #[arg(long)] proxy: Option<String> },
+    Add {
+        value: String,
+        #[arg(long)]
+        proxy: Option<String>,
+    },
     /// List stored accounts
     List,
     /// Select the default account
@@ -113,8 +121,7 @@ fn run(cli: Cli) -> Result<()> {
             prefs.delete_from_host = delete || prefs.delete_from_host;
             prefs.disable_unsupported_files_filter =
                 disable_filter || prefs.disable_unsupported_files_filter;
-            prefs.set_date_from_filename =
-                set_date_from_filename || prefs.set_date_from_filename;
+            prefs.set_date_from_filename = set_date_from_filename || prefs.set_date_from_filename;
             if let Some(pattern) = exclude {
                 prefs.exclude_pattern = pattern;
             }
@@ -140,7 +147,7 @@ fn run(cli: Cli) -> Result<()> {
                 album_name: album.unwrap_or_default(),
                 album_auto,
             };
-            core::upload::start_upload(state.clone(), store, paths, options)?;
+            core::upload::start_upload(state.clone(), paths, options)?;
             print_progress(&state);
             Ok(())
         }
@@ -149,7 +156,10 @@ fn run(cli: Cli) -> Result<()> {
                 let proxy = proxy.unwrap_or_else(|| store.preferences().proxy);
                 let (credential, email) = if core::auth::looks_like_auth_string(&value) {
                     core::auth::validate_credential_shape(&value)?;
-                    (value.trim().to_string(), core::auth::validate_credential_shape(&value)?)
+                    (
+                        value.trim().to_string(),
+                        core::auth::validate_credential_shape(&value)?,
+                    )
                 } else {
                     let android_id = core::auth::generate_android_id();
                     let exchange = core::runtime().block_on(
@@ -174,7 +184,11 @@ fn run(cli: Cli) -> Result<()> {
                     println!("No accounts stored.");
                 }
                 for account in accounts {
-                    let marker = if account.email == store.selected() { "*" } else { " " };
+                    let marker = if account.email == store.selected() {
+                        "*"
+                    } else {
+                        " "
+                    };
                     let binding = if account.needs_token_binding {
                         " (needs token binding)"
                     } else {

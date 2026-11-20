@@ -1,7 +1,7 @@
 //! Flat DTOs shared across the bridge.
 
 use crate::core::config::Preferences;
-use crate::core::upload::{CoreUploadEvent, CoreUploadResult, CoreSummary};
+use crate::core::upload::{CoreSummary, CoreUploadEvent, CoreUploadResult};
 
 pub struct AppSettings {
     pub proxy: String,

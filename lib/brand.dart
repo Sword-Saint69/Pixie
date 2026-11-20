@@ -8,10 +8,10 @@ class PixieLogo extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Image.asset(
-        'assets/pixie_logo.png',
-        width: size,
-        height: size,
-        fit: BoxFit.contain,
-        filterQuality: FilterQuality.high,
-      );
+    'assets/pixie_logo.png',
+    width: size,
+    height: size,
+    fit: BoxFit.contain,
+    filterQuality: FilterQuality.high,
+  );
 }

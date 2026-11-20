@@ -16,30 +16,30 @@ class ThemeController extends ChangeNotifier {
   PixieAccent get accent => _accent;
 
   ThemeMode get themeMode => switch (_mode) {
-        PixieThemeMode.system => ThemeMode.system,
-        PixieThemeMode.light => ThemeMode.light,
-        PixieThemeMode.dark => ThemeMode.dark,
-      };
+    PixieThemeMode.system => ThemeMode.system,
+    PixieThemeMode.light => ThemeMode.light,
+    PixieThemeMode.dark => ThemeMode.dark,
+  };
 
   Color get accentColor => switch (_accent) {
-        PixieAccent.violet => const Color(0xFF7C3AED),
-        PixieAccent.teal => const Color(0xFF0F8B8D),
-        PixieAccent.rose => const Color(0xFFE11D48),
-        PixieAccent.ocean => const Color(0xFF2563EB),
-      };
+    PixieAccent.violet => const Color(0xFF7C3AED),
+    PixieAccent.teal => const Color(0xFF0F8B8D),
+    PixieAccent.rose => const Color(0xFFE11D48),
+    PixieAccent.ocean => const Color(0xFF2563EB),
+  };
 
   String get modeLabel => switch (_mode) {
-        PixieThemeMode.system => 'System',
-        PixieThemeMode.light => 'Light',
-        PixieThemeMode.dark => 'Dark',
-      };
+    PixieThemeMode.system => 'System',
+    PixieThemeMode.light => 'Light',
+    PixieThemeMode.dark => 'Dark',
+  };
 
   String get accentLabel => switch (_accent) {
-        PixieAccent.violet => 'Violet',
-        PixieAccent.teal => 'Teal',
-        PixieAccent.rose => 'Rose',
-        PixieAccent.ocean => 'Ocean',
-      };
+    PixieAccent.violet => 'Violet',
+    PixieAccent.teal => 'Teal',
+    PixieAccent.rose => 'Rose',
+    PixieAccent.ocean => 'Ocean',
+  };
 
   Future<void> load() async {
     final prefs = await SharedPreferences.getInstance();
@@ -55,6 +55,7 @@ class ThemeController extends ChangeNotifier {
   }
 
   Future<void> setMode(PixieThemeMode mode) async {
+    if (_mode == mode) return;
     _mode = mode;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_modeKey, mode.name);
@@ -62,6 +63,7 @@ class ThemeController extends ChangeNotifier {
   }
 
   Future<void> setAccent(PixieAccent accent) async {
+    if (_accent == accent) return;
     _accent = accent;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_accentKey, accent.name);
@@ -73,7 +75,10 @@ class ThemeController extends ChangeNotifier {
 
   ThemeData _theme(Brightness brightness) {
     final dark = brightness == Brightness.dark;
-    final base = ColorScheme.fromSeed(seedColor: accentColor, brightness: brightness);
+    final base = ColorScheme.fromSeed(
+      seedColor: accentColor,
+      brightness: brightness,
+    );
     final scheme = dark
         ? base.copyWith(
             primary: Color.lerp(accentColor, Colors.white, 0.38)!,
@@ -93,7 +98,9 @@ class ThemeController extends ChangeNotifier {
     return ThemeData(
       useMaterial3: true,
       colorScheme: scheme,
-      scaffoldBackgroundColor: dark ? const Color(0xFF0C1013) : const Color(0xFFF4F6F8),
+      scaffoldBackgroundColor: dark
+          ? const Color(0xFF0C1013)
+          : const Color(0xFFF4F6F8),
       appBarTheme: AppBarTheme(
         elevation: 0,
         scrolledUnderElevation: 0,
@@ -107,7 +114,9 @@ class ThemeController extends ChangeNotifier {
         surfaceTintColor: Colors.transparent,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
-          side: BorderSide(color: dark ? const Color(0xFF2B343B) : Colors.grey.shade200),
+          side: BorderSide(
+            color: dark ? const Color(0xFF2B343B) : Colors.grey.shade200,
+          ),
         ),
       ),
       dividerTheme: DividerThemeData(
@@ -118,13 +127,19 @@ class ThemeController extends ChangeNotifier {
       navigationRailTheme: NavigationRailThemeData(
         backgroundColor: dark ? const Color(0xFF11161A) : Colors.white,
         selectedIconTheme: IconThemeData(color: scheme.primary),
-        selectedLabelTextStyle: TextStyle(color: scheme.primary, fontWeight: FontWeight.w600),
+        selectedLabelTextStyle: TextStyle(
+          color: scheme.primary,
+          fontWeight: FontWeight.w600,
+        ),
       ),
       navigationBarTheme: NavigationBarThemeData(
         backgroundColor: dark ? const Color(0xFF11161A) : Colors.white,
         indicatorColor: scheme.primary.withValues(alpha: 0.16),
       ),
-      sliderTheme: SliderThemeData(activeTrackColor: scheme.primary, thumbColor: scheme.primary),
+      sliderTheme: SliderThemeData(
+        activeTrackColor: scheme.primary,
+        thumbColor: scheme.primary,
+      ),
       snackBarTheme: SnackBarThemeData(
         backgroundColor: const Color(0xFF14181B),
         contentTextStyle: const TextStyle(color: Colors.white),
@@ -136,14 +151,17 @@ class ThemeController extends ChangeNotifier {
         fillColor: dark ? const Color(0xFF1B2228) : const Color(0xFFF4F6F8),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
-          borderSide: BorderSide(color: dark ? const Color(0xFF334048) : Colors.grey.shade300),
+          borderSide: BorderSide(
+            color: dark ? const Color(0xFF334048) : Colors.grey.shade300,
+          ),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
-          borderSide: BorderSide(color: dark ? const Color(0xFF334048) : Colors.grey.shade300),
+          borderSide: BorderSide(
+            color: dark ? const Color(0xFF334048) : Colors.grey.shade300,
+          ),
         ),
       ),
     );
   }
-
 }

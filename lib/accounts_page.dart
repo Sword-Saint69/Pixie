@@ -1,6 +1,7 @@
-import 'package:material_ui/material_ui.dart';
+import 'package:gotohp_rs/error_messages.dart';
 import 'package:gotohp_rs/src/rust/api.dart';
 import 'package:gotohp_rs/src/rust/api/app_types.dart';
+import 'package:material_ui/material_ui.dart';
 
 class AccountsPage extends StatefulWidget {
   const AccountsPage({super.key});
@@ -37,7 +38,7 @@ class _AccountsState extends State<AccountsPage> {
   }
 
   void _setError(Object e) {
-    if (mounted) setState(() => _error = e.toString().replaceFirst('AnyhowException(', '').replaceAll(RegExp(r'\)$'), ''));
+    if (mounted) setState(() => _error = friendlyError(e));
   }
 
   Future<void> _add() async {
@@ -67,15 +68,23 @@ class _AccountsState extends State<AccountsPage> {
                   controller: controller,
                   maxLines: 5,
                   decoration: InputDecoration(
-                    labelText: raw ? 'androidId=...&Email=...&Token=...' : 'oauth_token cookie value',
+                    labelText: raw
+                        ? 'androidId=...&Email=...&Token=...'
+                        : 'oauth_token cookie value',
                   ),
                 ),
               ],
             ),
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
-            FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('Connect')),
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Connect'),
+            ),
           ],
         ),
       ),
@@ -89,7 +98,10 @@ class _AccountsState extends State<AccountsPage> {
       final settings = await getSettings();
       final email = raw
           ? await addAccountRaw(credential: controller.text.trim())
-          : await addAccountOauth(oauthToken: controller.text.trim(), proxy: settings.proxy);
+          : await addAccountOauth(
+              oauthToken: controller.text.trim(),
+              proxy: settings.proxy,
+            );
       await selectAccount(email: email);
       await _load();
       if (mounted) setState(() => _notice = 'Connected $email');
@@ -103,7 +115,8 @@ class _AccountsState extends State<AccountsPage> {
   Future<void> _test(AccountInfo account) async {
     try {
       await validateAccount(email: account.email);
-      if (mounted) setState(() => _notice = '${account.email}: credential accepted');
+      if (mounted)
+        setState(() => _notice = '${account.email}: credential accepted');
     } catch (e) {
       _setError(e);
     }
@@ -116,10 +129,15 @@ class _AccountsState extends State<AccountsPage> {
         title: const Text('Remove account?'),
         content: Text('Remove ${account.email} from this device?'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
           FilledButton(
             onPressed: () => Navigator.pop(context, true),
-            style: FilledButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.error),
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.error,
+            ),
             child: const Text('Remove'),
           ),
         ],
@@ -151,10 +169,22 @@ class _AccountsState extends State<AccountsPage> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Accounts', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: cs.onSurface)),
+                        Text(
+                          'Accounts',
+                          style: TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.w700,
+                            color: cs.onSurface,
+                          ),
+                        ),
                         const SizedBox(height: 4),
-                        Text('${_accounts.length} Google account(s) stored on this device',
-                            style: TextStyle(fontSize: 13, color: cs.onSurfaceVariant)),
+                        Text(
+                          '${_accounts.length} Google account(s) stored on this device',
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: cs.onSurfaceVariant,
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -174,15 +204,23 @@ class _AccountsState extends State<AccountsPage> {
                     decoration: BoxDecoration(
                       color: cs.error.withValues(alpha: 0.08),
                       borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: cs.error.withValues(alpha: 0.3)),
+                      border: Border.all(
+                        color: cs.error.withValues(alpha: 0.3),
+                      ),
                     ),
-                    child: SelectableText(_error!, style: TextStyle(color: cs.error, fontSize: 12)),
+                    child: SelectableText(
+                      _error!,
+                      style: TextStyle(color: cs.error, fontSize: 12),
+                    ),
                   ),
                 ),
               if (_notice != null)
                 Padding(
                   padding: const EdgeInsets.only(bottom: 12),
-                  child: Text(_notice!, style: TextStyle(color: Colors.green.shade700)),
+                  child: Text(
+                    _notice!,
+                    style: TextStyle(color: Colors.green.shade700),
+                  ),
                 ),
               if (_accounts.isEmpty)
                 Card(
@@ -190,11 +228,24 @@ class _AccountsState extends State<AccountsPage> {
                     padding: const EdgeInsets.all(48),
                     child: Column(
                       children: [
-                        Icon(Icons.account_circle_outlined, size: 40, color: cs.onSurfaceVariant),
+                        Icon(
+                          Icons.account_circle_outlined,
+                          size: 40,
+                          color: cs.onSurfaceVariant,
+                        ),
                         const SizedBox(height: 12),
-                        Text('No accounts yet', style: TextStyle(fontSize: 15, color: cs.onSurface)),
+                        Text(
+                          'No accounts yet',
+                          style: TextStyle(fontSize: 15, color: cs.onSurface),
+                        ),
                         const SizedBox(height: 4),
-                        Text('Add a credential to start uploading.', style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant)),
+                        Text(
+                          'Add a credential to start uploading.',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: cs.onSurfaceVariant,
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -205,7 +256,10 @@ class _AccountsState extends State<AccountsPage> {
                     child: ListTile(
                       leading: CircleAvatar(
                         backgroundColor: cs.primary.withValues(alpha: 0.12),
-                        child: Text(account.email[0].toUpperCase(), style: TextStyle(color: cs.primary)),
+                        child: Text(
+                          account.email[0].toUpperCase(),
+                          style: TextStyle(color: cs.primary),
+                        ),
                       ),
                       title: Text(
                         account.email,
@@ -215,20 +269,34 @@ class _AccountsState extends State<AccountsPage> {
                         overflow: TextOverflow.ellipsis,
                       ),
                       subtitle: Text(
-                        account.needsTokenBinding ? 'Needs token binding (not supported)' : 'Ready to upload',
-                        style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant),
+                        account.needsTokenBinding
+                            ? 'Needs token binding (not supported)'
+                            : 'Ready to upload',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: cs.onSurfaceVariant,
+                        ),
                       ),
                       trailing: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           if (_selected == account.email)
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 4,
+                              ),
                               decoration: BoxDecoration(
                                 color: cs.primary.withValues(alpha: 0.12),
                                 borderRadius: BorderRadius.circular(20),
                               ),
-                              child: Text('Active', style: TextStyle(fontSize: 11, color: cs.primary)),
+                              child: Text(
+                                'Active',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: cs.primary,
+                                ),
+                              ),
                             ),
                           PopupMenuButton<String>(
                             tooltip: 'Account actions',
@@ -245,9 +313,18 @@ class _AccountsState extends State<AccountsPage> {
                               if (value == 'remove') await _remove(account);
                             },
                             itemBuilder: (context) => const [
-                              PopupMenuItem(value: 'select', child: Text('Make active')),
-                              PopupMenuItem(value: 'test', child: Text('Test credential')),
-                              PopupMenuItem(value: 'remove', child: Text('Remove account')),
+                              PopupMenuItem(
+                                value: 'select',
+                                child: Text('Make active'),
+                              ),
+                              PopupMenuItem(
+                                value: 'test',
+                                child: Text('Test credential'),
+                              ),
+                              PopupMenuItem(
+                                value: 'remove',
+                                child: Text('Remove account'),
+                              ),
                             ],
                           ),
                         ],

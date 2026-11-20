@@ -22,18 +22,29 @@ class _AboutState extends State<AboutPage> {
   @override
   void initState() {
     super.initState();
-    coreInfo().then((info) {
-      if (mounted) setState(() => _info = info);
-    }).catchError((_) {});
-    configPath().then((path) {
-      if (mounted) setState(() => _configPath = path);
-    }).catchError((_) {});
+    coreInfo()
+        .then((info) {
+          if (mounted) setState(() => _info = info);
+        })
+        .catchError((_) {});
+    configPath()
+        .then((path) {
+          if (mounted) setState(() => _configPath = path);
+        })
+        .catchError((_) {});
   }
 
   Future<void> _open(String url) async {
     final uri = Uri.parse(url);
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } else if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Could not open link'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
     }
   }
 
@@ -50,7 +61,10 @@ class _AboutState extends State<AboutPage> {
     await Clipboard.setData(ClipboardData(text: text));
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Debug info copied'), behavior: SnackBarBehavior.floating),
+        const SnackBar(
+          content: Text('Debug info copied'),
+          behavior: SnackBarBehavior.floating,
+        ),
       );
     }
   }
@@ -76,10 +90,19 @@ class _AboutState extends State<AboutPage> {
                 child: const PixieLogo(size: 80),
               ),
               const SizedBox(height: 14),
-              Text('Pixie', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800, color: cs.onSurface)),
+              Text(
+                'Pixie',
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.w800,
+                  color: cs.onSurface,
+                ),
+              ),
               const SizedBox(height: 4),
-              Text('Photo cloud uploader · Rust core',
-                  style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant)),
+              Text(
+                'Photo cloud uploader · Rust core',
+                style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
+              ),
               const SizedBox(height: 20),
               PixieCard(
                 child: Column(
@@ -87,8 +110,14 @@ class _AboutState extends State<AboutPage> {
                   children: [
                     const MicroLabel('Changelog'),
                     const SizedBox(height: 10),
-                    _change('0.1.0', 'Rust upload core, Flutter shell, themes, preflight and live progress.'),
-                    _change('0.0.2', 'Android config path and TLS trust fixes.'),
+                    _change(
+                      '0.1.0',
+                      'Rust upload core, Flutter shell, themes, preflight and live progress.',
+                    ),
+                    _change(
+                      '0.0.2',
+                      'Android config path and TLS trust fixes.',
+                    ),
                     _change('0.0.1', 'Initial build with embedded credential.'),
                     const SizedBox(height: 6),
                     OutlinedButton.icon(
@@ -142,7 +171,10 @@ class _AboutState extends State<AboutPage> {
                   collapsedIconColor: cs.onSurfaceVariant,
                   children: [
                     if (_info == null)
-                      const SizedBox(height: 48, child: Center(child: CircularProgressIndicator()))
+                      const SizedBox(
+                        height: 48,
+                        child: Center(child: CircularProgressIndicator()),
+                      )
                     else
                       Padding(
                         padding: const EdgeInsets.fromLTRB(18, 0, 18, 16),
@@ -168,39 +200,54 @@ class _AboutState extends State<AboutPage> {
   }
 
   Widget _change(String version, String text) => Padding(
-        padding: const EdgeInsets.symmetric(vertical: 5),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.10),
-                borderRadius: BorderRadius.circular(7),
-              ),
-              child: Text(version, style: TextStyle(fontSize: 10, color: Theme.of(context).colorScheme.primary)),
+    padding: const EdgeInsets.symmetric(vertical: 5),
+    child: Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.primary
+                .withValues(alpha: 0.10),
+            borderRadius: BorderRadius.circular(7),
+          ),
+          child: Text(
+            version,
+            style: TextStyle(
+              fontSize: 10,
+              color: Theme.of(context).colorScheme.primary,
             ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Text(text, style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant)),
-            ),
-          ],
+          ),
         ),
-      );
+        const SizedBox(width: 10),
+        Expanded(
+          child: Text(
+            text,
+            style: TextStyle(
+              fontSize: 12,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ),
+      ],
+    ),
+  );
 
   Widget _row(String label, String value, ColorScheme cs) => Padding(
-        padding: const EdgeInsets.symmetric(vertical: 7),
-        child: Row(
-          children: [
-            MicroLabel(label),
-            const Spacer(),
-            Flexible(
-              child: Text(value,
-                  textAlign: TextAlign.right,
-                  style: TextStyle(fontSize: 12, color: cs.onSurface),
-                  overflow: TextOverflow.ellipsis),
-            ),
-          ],
+    padding: const EdgeInsets.symmetric(vertical: 7),
+    child: Row(
+      children: [
+        MicroLabel(label),
+        const Spacer(),
+        Flexible(
+          child: Text(
+            value,
+            textAlign: TextAlign.right,
+            style: TextStyle(fontSize: 12, color: cs.onSurface),
+            overflow: TextOverflow.ellipsis,
+          ),
         ),
-      );
+      ],
+    ),
+  );
 }

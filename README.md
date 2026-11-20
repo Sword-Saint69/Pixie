@@ -150,9 +150,17 @@ rebuild, or sign out and back in on the phone to invalidate the token.
    was not launched. Endpoint/header correctness is
    derived from the reference source, not from an observed successful upload.
 
+## Code quality
+
+- `friendlyError()` in `lib/error_messages.dart` is the single mapper from bridge exceptions to user-facing text.
+- Upload options are built in one place: `UploadOptions::from_preferences`.
+- Malformed `gotohp.config` is warned about and falls back to defaults instead of being silently discarded.
+- Theme setters are idempotent; the shell only polls the summary while a run is active or after one has finished.
+- Rust tests cover config validation, progress accounting, filename parsing and discovery.
+
 ## Status
 
-Rust unit tests: 10 passed. Flutter integration tests on Linux: 2 passed.
+Rust unit tests: 13 passed. Flutter integration tests on Linux: 2 passed.
 `flutter analyze`: no issues. `flutter build linux --release` and
 `flutter build apk --release`: both succeeded. The universal APK (65.2 MB)
 contains `libgotohp_core.so` for arm64-v8a, armeabi-v7a and x86_64; the

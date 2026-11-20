@@ -3,15 +3,18 @@ import 'package:material_ui/material_ui.dart';
 /// Shared visual language taken from the inspo folder: editorial cards,
 /// oversized figures, micro-labels, status segments and dot matrices.
 
-Color successColor(BuildContext context) => Theme.of(context).brightness == Brightness.dark
+Color successColor(BuildContext context) =>
+    Theme.of(context).brightness == Brightness.dark
     ? const Color(0xFF4ADE80)
     : const Color(0xFF16A34A);
 
-Color warningColor(BuildContext context) => Theme.of(context).brightness == Brightness.dark
+Color warningColor(BuildContext context) =>
+    Theme.of(context).brightness == Brightness.dark
     ? const Color(0xFFFBBF24)
     : const Color(0xFFD97706);
 
-Color dangerColor(BuildContext context) => Theme.of(context).brightness == Brightness.dark
+Color dangerColor(BuildContext context) =>
+    Theme.of(context).brightness == Brightness.dark
     ? const Color(0xFFF87171)
     : const Color(0xFFDC2626);
 
@@ -30,7 +33,11 @@ class PixieCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(18),
         border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.45)),
         boxShadow: [
-          BoxShadow(color: Colors.black.withValues(alpha: 0.035), blurRadius: 18, offset: const Offset(0, 4)),
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.035),
+            blurRadius: 18,
+            offset: const Offset(0, 4),
+          ),
         ],
       ),
       padding: EdgeInsets.all(padding),
@@ -68,11 +75,11 @@ class AnimatedNumberText extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => TweenAnimationBuilder<int>(
-        tween: IntTween(begin: 0, end: value),
-        duration: const Duration(milliseconds: 650),
-        curve: Curves.easeOut,
-        builder: (context, animated, _) => Text('$animated', style: style),
-      );
+    tween: IntTween(begin: 0, end: value),
+    duration: const Duration(milliseconds: 650),
+    curve: Curves.easeOut,
+    builder: (context, animated, _) => Text('$animated', style: style),
+  );
 }
 
 class StatCard extends StatelessWidget {
@@ -115,17 +122,37 @@ class StatCard extends StatelessWidget {
                 ),
                 const Spacer(),
                 if (hint != null)
-                  Text(hint!, style: TextStyle(fontSize: 10, color: cs.onSurfaceVariant)),
+                  Text(
+                    hint!,
+                    style: TextStyle(fontSize: 10, color: cs.onSurfaceVariant),
+                  ),
               ],
             ),
             const SizedBox(height: 14),
             count != null
-                ? AnimatedNumberText(count!,
-                    style: TextStyle(fontSize: 26, fontWeight: FontWeight.w700, color: cs.onSurface, height: 1))
-                : Text(value,
-                    style: TextStyle(fontSize: 26, fontWeight: FontWeight.w700, color: cs.onSurface, height: 1)),
+                ? AnimatedNumberText(
+                    count!,
+                    style: TextStyle(
+                      fontSize: 26,
+                      fontWeight: FontWeight.w700,
+                      color: cs.onSurface,
+                      height: 1,
+                    ),
+                  )
+                : Text(
+                    value,
+                    style: TextStyle(
+                      fontSize: 26,
+                      fontWeight: FontWeight.w700,
+                      color: cs.onSurface,
+                      height: 1,
+                    ),
+                  ),
             const SizedBox(height: 5),
-            Text(label, style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant)),
+            Text(
+              label,
+              style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant),
+            ),
           ],
         ),
       ),
@@ -136,7 +163,12 @@ class StatCard extends StatelessWidget {
 /// Three-part bar in the style of the "Workflow health" reference: one
 /// continuous track split proportionally between success, skipped and failed.
 class StatusBar extends StatelessWidget {
-  const StatusBar({super.key, required this.done, required this.skipped, required this.failed});
+  const StatusBar({
+    super.key,
+    required this.done,
+    required this.skipped,
+    required this.failed,
+  });
 
   final int done;
   final int skipped;
@@ -166,7 +198,8 @@ class StatusBar extends StatelessWidget {
                       flex: count,
                       child: Container(color: color),
                     ),
-                if (total == 0) Expanded(child: Container(color: cs.surfaceContainerHighest)),
+                if (total == 0)
+                  Expanded(child: Container(color: cs.surfaceContainerHighest)),
               ],
             ),
           ),
@@ -183,21 +216,31 @@ class StatusBar extends StatelessWidget {
     );
   }
 
-  Widget _legend(String label, int count, int total, Color color, ColorScheme cs) => Expanded(
-        child: Row(
-          children: [
-            Container(width: 8, height: 8, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
-            const SizedBox(width: 6),
-            Flexible(
-              child: Text(
-                total == 0 ? label : '$label ${(count / total * 100).round()}%',
-                style: TextStyle(fontSize: 10, color: cs.onSurfaceVariant),
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-          ],
+  Widget _legend(
+    String label,
+    int count,
+    int total,
+    Color color,
+    ColorScheme cs,
+  ) => Expanded(
+    child: Row(
+      children: [
+        Container(
+          width: 8,
+          height: 8,
+          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
         ),
-      );
+        const SizedBox(width: 6),
+        Flexible(
+          child: Text(
+            total == 0 ? label : '$label ${(count / total * 100).round()}%',
+            style: TextStyle(fontSize: 10, color: cs.onSurfaceVariant),
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ],
+    ),
+  );
 }
 
 /// Dot matrix from the "athletic score" / heatmap references. Each dot is a
@@ -212,7 +255,10 @@ class DotMatrix extends StatelessWidget {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     if (states.isEmpty) {
-      return Text('No files in this session yet.', style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant));
+      return Text(
+        'No files in this session yet.',
+        style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant),
+      );
     }
     return Wrap(
       spacing: 6,
@@ -271,12 +317,22 @@ class PillSwitch<T> extends StatelessWidget {
               onTap: () => onChanged(values[i]),
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 160),
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 7,
+                ),
                 decoration: BoxDecoration(
-                  color: selected == values[i] ? cs.surface : Colors.transparent,
+                  color: selected == values[i]
+                      ? cs.surface
+                      : Colors.transparent,
                   borderRadius: BorderRadius.circular(9),
                   boxShadow: selected == values[i]
-                      ? [BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 6)]
+                      ? [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.06),
+                            blurRadius: 6,
+                          ),
+                        ]
                       : null,
                 ),
                 child: Row(
@@ -292,8 +348,12 @@ class PillSwitch<T> extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         fontSize: 12,
-                        fontWeight: selected == values[i] ? FontWeight.w700 : FontWeight.w500,
-                        color: selected == values[i] ? cs.onSurface : cs.onSurfaceVariant,
+                        fontWeight: selected == values[i]
+                            ? FontWeight.w700
+                            : FontWeight.w500,
+                        color: selected == values[i]
+                            ? cs.onSurface
+                            : cs.onSurfaceVariant,
                       ),
                     ),
                   ],

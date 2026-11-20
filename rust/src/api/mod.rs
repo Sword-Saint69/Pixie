@@ -79,12 +79,7 @@ pub fn add_account_oauth(oauth_token: String, proxy: String) -> anyhow::Result<S
         &exchange.master_token,
         &android_id,
     );
-    let api = crate::core::api::Api::new(
-        &credential,
-        &proxy,
-        false,
-        false,
-    )?;
+    let api = crate::core::api::Api::new(&credential, &proxy, false, false)?;
     crate::core::runtime().block_on(api.validate())?;
     config_store().upsert_credential(&credential)
 }
@@ -102,22 +97,8 @@ pub fn validate_account(email: String) -> anyhow::Result<()> {
 
 pub fn preview_files(paths: Vec<String>, settings: AppSettings) -> anyhow::Result<Vec<String>> {
     let credential = config_store().credential_for("")?;
-    let prefs = settings.into_core();
-    let options = crate::core::upload::UploadOptions {
-        credential,
-        proxy: prefs.proxy.clone(),
-        saver: prefs.saver,
-        use_quota: prefs.use_quota,
-        recursive: prefs.recursive,
-        exclude_pattern: prefs.exclude_pattern.clone(),
-        threads: prefs.upload_threads.max(1) as usize,
-        force_upload: prefs.force_upload,
-        delete_from_host: prefs.delete_from_host,
-        disable_unsupported_files_filter: prefs.disable_unsupported_files_filter,
-        set_date_from_filename: prefs.set_date_from_filename,
-        album_name: String::new(),
-        album_auto: false,
-    };
+    let options =
+        crate::core::upload::UploadOptions::from_preferences(&settings.into_core(), credential);
     Ok(crate::core::upload::discover_files(&paths, &options)?
         .into_iter()
         .map(|p| p.display().to_string())
@@ -132,13 +113,11 @@ pub fn start_upload(
     account: String,
 ) -> anyhow::Result<()> {
     let credential = config_store().credential_for(&account)?;
-    let mut options = crate::core::upload::UploadOptions::from_preferences(
-        &settings.into_core(),
-        credential,
-    );
+    let mut options =
+        crate::core::upload::UploadOptions::from_preferences(&settings.into_core(), credential);
     options.album_name = album_name;
     options.album_auto = album_auto;
-    crate::core::upload::start_upload(upload_state(), config_store(), paths, options)
+    crate::core::upload::start_upload(upload_state(), paths, options)
 }
 
 pub fn cancel_upload() {
@@ -174,26 +153,15 @@ pub fn preview_files_detailed(
     paths: Vec<String>,
     settings: AppSettings,
 ) -> anyhow::Result<Vec<FilePreview>> {
-    let prefs = settings.into_core();
-    let options = crate::core::upload::UploadOptions {
-        credential: config_store().credential_for("")?,
-        proxy: prefs.proxy.clone(),
-        saver: prefs.saver,
-        use_quota: prefs.use_quota,
-        recursive: prefs.recursive,
-        exclude_pattern: prefs.exclude_pattern.clone(),
-        threads: prefs.upload_threads.max(1) as usize,
-        force_upload: prefs.force_upload,
-        delete_from_host: prefs.delete_from_host,
-        disable_unsupported_files_filter: prefs.disable_unsupported_files_filter,
-        set_date_from_filename: prefs.set_date_from_filename,
-        album_name: String::new(),
-        album_auto: false,
-    };
+    let credential = config_store().credential_for("")?;
+    let options =
+        crate::core::upload::UploadOptions::from_preferences(&settings.into_core(), credential);
     Ok(crate::core::upload::discover_files(&paths, &options)?
         .into_iter()
         .map(|path| FilePreview {
-            size_bytes: std::fs::metadata(&path).map(|m| m.len() as i64).unwrap_or(0),
+            size_bytes: std::fs::metadata(&path)
+                .map(|m| m.len() as i64)
+                .unwrap_or(0),
             path: path.display().to_string(),
         })
         .collect())

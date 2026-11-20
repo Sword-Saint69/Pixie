@@ -69,7 +69,13 @@ pub struct ConfigStore {
 impl ConfigStore {
     pub fn load(path: Option<PathBuf>) -> Result<Self> {
         let path = path.unwrap_or_else(determine_config_path);
-        let config = load_file(&path).unwrap_or_default();
+        let config = load_file(&path).unwrap_or_else(|err| {
+            eprintln!(
+                "warning: ignoring unreadable config {}: {err:#}",
+                path.display()
+            );
+            Config::default()
+        });
         Ok(Self {
             path,
             config: RwLock::new(config),
@@ -123,7 +129,11 @@ impl ConfigStore {
 
     pub fn select_account(&self, email: &str) -> Result<()> {
         let email = email.trim();
-        if !self.accounts().iter().any(|a| a.email.eq_ignore_ascii_case(email)) {
+        if !self
+            .accounts()
+            .iter()
+            .any(|a| a.email.eq_ignore_ascii_case(email))
+        {
             anyhow::bail!("no credentials found for account {email}");
         }
         let mut guard = self.config.write().expect("config lock poisoned");
@@ -318,6 +328,16 @@ mod tests {
     }
 
     #[test]
+    fn malformed_config_falls_back_to_defaults() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("gotohp.config");
+        fs::write(&path, "account: [not valid").unwrap();
+        let store = ConfigStore::load(Some(path)).unwrap();
+        assert_eq!(store.preferences().upload_threads, 3);
+        assert!(store.accounts().is_empty());
+    }
+
+    #[test]
     fn config_roundtrip() {
         let dir = tempfile::tempdir().unwrap();
         let path = dir.path().join("gotohp.config");
@@ -328,7 +348,13 @@ mod tests {
             ..Preferences::default()
         };
         store.update_preferences(prefs.clone()).unwrap();
-        assert_eq!(ConfigStore::load(Some(path)).unwrap().preferences().upload_threads, 7);
+        assert_eq!(
+            ConfigStore::load(Some(path))
+                .unwrap()
+                .preferences()
+                .upload_threads,
+            7
+        );
         let text = fs::read_to_string(store.path()).unwrap();
         assert!(text.contains("upload_threads: 7"), "{text}");
         assert!(text.contains("skip_incomplete_live_photos: true"), "{text}");

@@ -5,7 +5,9 @@ use crate::core::config::parse_query;
 use crate::core::proto::pb::commit_upload::field1_type::{
     Field1Type as CommitField1Inner, Field4Type as CommitField4,
 };
-use crate::core::proto::pb::commit_upload::{Field1Type as CommitField1, Field2Type as CommitDevice};
+use crate::core::proto::pb::commit_upload::{
+    Field1Type as CommitField1, Field2Type as CommitDevice,
+};
 use crate::core::proto::pb::hash_check::field1_type::{
     Field1Type as HashInner, Field2Type as HashProbe,
 };
@@ -116,7 +118,10 @@ impl Api {
             .filter(|s| !s.is_empty())
             .context("auth response missing Auth token")?
             .clone();
-        *self.auth_cache.lock().await = AuthCache { expiry, auth: auth.clone() };
+        *self.auth_cache.lock().await = AuthCache {
+            expiry,
+            auth: auth.clone(),
+        };
         Ok(auth)
     }
 
@@ -145,7 +150,10 @@ impl Api {
             .header("Connection", "Keep-Alive")
             .header("Content-Type", "application/x-www-form-urlencoded")
             .header("device", device)
-            .header("User-Agent", "GoogleAuth/1.4 (Pixel XL PQ2A.190205.001); gzip")
+            .header(
+                "User-Agent",
+                "GoogleAuth/1.4 (Pixel XL PQ2A.190205.001); gzip",
+            )
             .body(body)
             .send()
             .await
@@ -165,7 +173,10 @@ impl Api {
             .get("AuthEncrypted")
             .or_else(|| values.get("Encrypted"))
         {
-            bail!("auth response is token-encrypted ({}-byte payload); token binding is required", encrypted.len());
+            bail!(
+                "auth response is token-encrypted ({}-byte payload); token binding is required",
+                encrypted.len()
+            );
         }
         Ok(values)
     }
@@ -233,7 +244,8 @@ impl Api {
                 String::from_utf8_lossy(&bytes)
             );
         }
-        let parsed = RemoteMatches::decode(bytes.as_ref()).context("invalid hash-check response")?;
+        let parsed =
+            RemoteMatches::decode(bytes.as_ref()).context("invalid hash-check response")?;
         Ok(parsed
             .field1
             .and_then(|f| f.field2)
@@ -390,10 +402,7 @@ impl Api {
     }
 
     async fn commit_once(&self, body: &[u8]) -> std::result::Result<String, (anyhow::Error, bool)> {
-        let bearer = self
-            .bearer_token()
-            .await
-            .map_err(|e| (e, true))?;
+        let bearer = self.bearer_token().await.map_err(|e| (e, true))?;
         let response = self
             .client
             .post(CREATE_MEDIA_ITEMS_ENDPOINT)
@@ -409,7 +418,10 @@ impl Api {
             .await
             .map_err(|e| (anyhow::Error::new(e).context("commit request failed"), true))?;
         let status = response.status();
-        let bytes = response.bytes().await.map_err(|e| (anyhow::Error::new(e), true))?;
+        let bytes = response
+            .bytes()
+            .await
+            .map_err(|e| (anyhow::Error::new(e), true))?;
         if !status.is_success() {
             let retryable = status.as_u16() >= 500 || status.as_u16() == 429;
             return Err((
@@ -433,7 +445,12 @@ impl Api {
             .filter_map(|item| item.result_item.as_ref())
             .map(|result| result.media_key.clone())
             .find(|key| !key.is_empty())
-            .ok_or_else(|| (anyhow::anyhow!("upload rejected by API: media key is empty or missing"), false))
+            .ok_or_else(|| {
+                (
+                    anyhow::anyhow!("upload rejected by API: media key is empty or missing"),
+                    false,
+                )
+            })
     }
 
     pub async fn create_album(&self, name: &str, media_keys: &[String]) -> Result<String> {
@@ -532,10 +549,7 @@ impl Api {
         headers.insert("Accept-Language", self.language.parse()?);
         headers.insert("Content-Type", "application/x-protobuf".parse()?);
         headers.insert("User-Agent", self.user_agent.parse()?);
-        headers.insert(
-            "Authorization",
-            format!("Bearer {bearer}").parse()?,
-        );
+        headers.insert("Authorization", format!("Bearer {bearer}").parse()?);
         Ok(headers)
     }
 }

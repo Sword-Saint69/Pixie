@@ -1,17 +1,17 @@
 //! Upload orchestration: discovery, hashing, dedup, worker pool and events.
 
 use crate::core::api::Api;
-use crate::core::config::{ConfigStore, Preferences};
+use crate::core::config::Preferences;
 use anyhow::{bail, Context, Result};
-use futures::StreamExt;
 use chrono::{Datelike, Local, NaiveDateTime, TimeZone};
+use futures::StreamExt;
 use sha1::Digest;
 use std::collections::{HashMap, VecDeque};
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, AtomicI64, Ordering};
 use std::sync::Arc;
-use std::time::Instant;
 use std::sync::Mutex;
+use std::time::Instant;
 use tokio::sync::RwLock;
 
 #[derive(Debug, Clone, Default)]
@@ -192,7 +192,8 @@ impl UploadState {
     }
 
     pub fn add_uploaded_bytes(&self, bytes: i64) {
-        self.uploaded_bytes.fetch_add(bytes.max(0), Ordering::AcqRel);
+        self.uploaded_bytes
+            .fetch_add(bytes.max(0), Ordering::AcqRel);
     }
 
     pub fn is_running(&self) -> bool {
@@ -227,7 +228,6 @@ impl UploadState {
 
 pub fn start_upload(
     state: Arc<UploadState>,
-    store: Arc<ConfigStore>,
     paths: Vec<String>,
     options: UploadOptions,
 ) -> Result<()> {
@@ -252,7 +252,7 @@ pub fn start_upload(
     state.running.store(true, Ordering::Release);
 
     crate::core::runtime().spawn(async move {
-        let result = run_upload(&state, store, paths, options, token).await;
+        let result = run_upload(&state, paths, options, token).await;
         if let Err(err) = result {
             state.emit_sync(CoreUploadEvent {
                 event_type: "fatal".into(),
@@ -272,7 +272,6 @@ pub fn start_upload(
 
 async fn run_upload(
     state: &Arc<UploadState>,
-    store: Arc<ConfigStore>,
     paths: Vec<String>,
     options: UploadOptions,
     cancel: tokio_util::sync::CancellationToken,
@@ -282,7 +281,11 @@ async fn run_upload(
         ..Default::default()
     });
     let files = discover_files(&paths, &options)?;
-    let total_bytes: i64 = files.iter().filter_map(|p| std::fs::metadata(p).ok()).map(|m| m.len() as i64).sum();
+    let total_bytes: i64 = files
+        .iter()
+        .filter_map(|p| std::fs::metadata(p).ok())
+        .map(|m| m.len() as i64)
+        .sum();
     state.set_total_bytes(total_bytes);
     state.emit_sync(CoreUploadEvent {
         event_type: "start".into(),
@@ -304,7 +307,6 @@ async fn run_upload(
             let options = options.clone();
             let state = state.clone();
             let cancel = cancel.clone();
-            let _store = store.clone();
             async move {
                 if cancel.is_cancelled() {
                     return CoreUploadResult::default();
@@ -326,7 +328,7 @@ async fn run_upload(
                         }
                     }
                 };
-                        upload_single_file(&api, &path, &options, &state, worker, &cancel).await
+                upload_single_file(&api, &path, &options, &state, worker, &cancel).await
             }
         })
         .buffer_unordered(options.threads)
@@ -347,7 +349,9 @@ async fn run_upload(
             }
         }
         if !result.is_error {
-            let bytes = std::fs::metadata(&result.path).map(|m| m.len() as i64).unwrap_or(0);
+            let bytes = std::fs::metadata(&result.path)
+                .map(|m| m.len() as i64)
+                .unwrap_or(0);
             state.add_uploaded_bytes(bytes);
         }
         summary.results.push(result.clone());
@@ -480,7 +484,10 @@ async fn upload_single_file(
 
     if !options.force_upload {
         state.wait_if_paused().await;
-        state.emit_sync(thread("checking", "Checking if file exists in library...".into()));
+        state.emit_sync(thread(
+            "checking",
+            "Checking if file exists in library...".into(),
+        ));
         match api.find_remote_media_by_hash(&sha1).await {
             Ok(key) if !key.is_empty() => {
                 state.emit_sync(thread("completed", "Already in library".into()));
@@ -491,7 +498,9 @@ async fn upload_single_file(
                 if options.delete_from_host {
                     if let Err(err) = tokio::fs::remove_file(path).await {
                         result.is_error = true;
-                        result.error_message = format!("file exists in library but failed to delete local copy: {err}");
+                        result.error_message = format!(
+                            "file exists in library but failed to delete local copy: {err}"
+                        );
                     }
                 }
                 return result;
@@ -602,8 +611,8 @@ pub fn discover_files(paths: &[String], options: &UploadOptions) -> Result<Vec<P
     let mut seen = std::collections::HashSet::new();
     for raw in paths {
         let path = Path::new(raw);
-        let meta = std::fs::metadata(path)
-            .with_context(|| format!("error accessing path {raw}"))?;
+        let meta =
+            std::fs::metadata(path).with_context(|| format!("error accessing path {raw}"))?;
         if meta.is_dir() {
             scan_dir(path, options, &mut files)?;
         } else {
@@ -624,13 +633,15 @@ pub fn discover_files(paths: &[String], options: &UploadOptions) -> Result<Vec<P
 }
 
 fn scan_dir(dir: &Path, options: &UploadOptions, out: &mut Vec<PathBuf>) -> Result<()> {
-    let entries = std::fs::read_dir(dir).with_context(|| format!("error scanning {}", dir.display()))?;
+    let entries =
+        std::fs::read_dir(dir).with_context(|| format!("error scanning {}", dir.display()))?;
     for entry in entries {
         let entry = entry?;
         let path = entry.path();
         if path.is_dir() {
             if !options.exclude_pattern.is_empty()
-                && path.file_name().and_then(|s| s.to_str()) == Some(options.exclude_pattern.as_str())
+                && path.file_name().and_then(|s| s.to_str())
+                    == Some(options.exclude_pattern.as_str())
             {
                 continue;
             }
@@ -673,8 +684,12 @@ async fn sha1_file(path: &Path, cancel: &tokio_util::sync::CancellationToken) ->
 pub fn timestamp_from_filename(path: &Path) -> Option<i64> {
     use regex::Regex;
     let base = path.file_name()?.to_str()?;
-    let patterns: [( &str, bool, bool); 4] = [
-        (r"(\d{4})(\d{2})(\d{2})[_-](\d{2})(\d{2})(\d{2})\d*", true, false),
+    let patterns: [(&str, bool, bool); 4] = [
+        (
+            r"(\d{4})(\d{2})(\d{2})[_-](\d{2})(\d{2})(\d{2})\d*",
+            true,
+            false,
+        ),
         (
             r"(\d{4})-(\d{1,2})-(\d{1,2})(?:[ _-](\d{2})(\d{2})(\d{2})\d*)?",
             false,
@@ -698,17 +713,30 @@ pub fn timestamp_from_filename(path: &Path) -> Option<i64> {
                 }
                 continue;
             }
-            let pad = |s: &str| if s.len() < 2 { format!("0{s}") } else { s.to_string() };
+            let pad = |s: &str| {
+                if s.len() < 2 {
+                    format!("0{s}")
+                } else {
+                    s.to_string()
+                }
+            };
             let (hour, min, sec) = if has_time || caps.len() >= 7 {
-                (caps.get(4).map(|m| m.as_str()).unwrap_or("12"),
-                 caps.get(5).map(|m| m.as_str()).unwrap_or("00"),
-                 caps.get(6).map(|m| m.as_str()).unwrap_or("00"))
+                (
+                    caps.get(4).map(|m| m.as_str()).unwrap_or("12"),
+                    caps.get(5).map(|m| m.as_str()).unwrap_or("00"),
+                    caps.get(6).map(|m| m.as_str()).unwrap_or("00"),
+                )
             } else {
                 ("12", "00", "00")
             };
             let stamp = format!(
                 "{}{}{} {}{}{}",
-                &caps[1], pad(&caps[2]), pad(&caps[3]), pad(hour), min, sec
+                &caps[1],
+                pad(&caps[2]),
+                pad(&caps[3]),
+                pad(hour),
+                min,
+                sec
             );
             if let Ok(naive) = NaiveDateTime::parse_from_str(&stamp, "%Y%m%d %H%M%S") {
                 if let Some(local) = Local.from_local_datetime(&naive).single() {
@@ -726,6 +754,20 @@ pub fn timestamp_from_filename(path: &Path) -> Option<i64> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn progress_tracks_totals_and_eta_defaults() {
+        let state = UploadState::default();
+        let initial = state.progress();
+        assert_eq!(initial.total_bytes, 0);
+        assert_eq!(initial.eta_seconds, -1);
+
+        state.set_total_bytes(1000);
+        state.add_uploaded_bytes(250);
+        let progress = state.progress();
+        assert_eq!(progress.total_bytes, 1000);
+        assert_eq!(progress.uploaded_bytes, 250);
+    }
 
     #[test]
     fn supported_extensions() {
@@ -752,11 +794,7 @@ mod tests {
             threads: 1,
             ..UploadOptions::from_preferences(&Preferences::default(), "x=1".into())
         };
-        let files = discover_files(
-            &[dir.path().display().to_string()],
-            &options,
-        )
-        .unwrap();
+        let files = discover_files(&[dir.path().display().to_string()], &options).unwrap();
         assert_eq!(files.len(), 1);
         assert!(files[0].ends_with("a.jpg"));
     }

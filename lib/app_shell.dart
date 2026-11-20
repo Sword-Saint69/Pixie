@@ -36,13 +36,16 @@ class _AppShellState extends State<AppShell> {
       try {
         final running = await isUploadRunning();
         final paused = await isUploadPaused();
-        final summary = await getSummary();
+        final needSummary = running || _total > 0;
+        final summary = needSummary ? await getSummary() : null;
         if (mounted) {
           setState(() {
             _running = running;
             _paused = paused;
-            _done = summary.succeeded + summary.skipped + summary.failed;
-            _total = summary.total;
+            if (summary != null) {
+              _done = summary.succeeded + summary.skipped + summary.failed;
+              _total = summary.total;
+            }
           });
         }
       } catch (_) {}
@@ -71,7 +74,10 @@ class _AppShellState extends State<AppShell> {
       duration: const Duration(milliseconds: 240),
       switchInCurve: Curves.easeOut,
       transitionBuilder: (child, animation) => SlideTransition(
-        position: Tween<Offset>(begin: const Offset(0, 0.025), end: Offset.zero).animate(animation),
+        position: Tween<Offset>(
+          begin: const Offset(0, 0.025),
+          end: Offset.zero,
+        ).animate(animation),
         child: FadeTransition(opacity: animation, child: child),
       ),
       child: KeyedSubtree(key: ValueKey(_index), child: pages[_index]),
@@ -79,8 +85,10 @@ class _AppShellState extends State<AppShell> {
 
     final appBar = AppBar(
       leading: wide ? null : const PixieLogo(size: 26),
-      title: Text(_titles[_index],
-          style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 18)),
+      title: Text(
+        _titles[_index],
+        style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 18),
+      ),
       actions: [
         _statusPill(cs),
         IconButton(
@@ -97,14 +105,18 @@ class _AppShellState extends State<AppShell> {
               PixieThemeMode.dark => PixieThemeMode.system,
             };
             widget.theme.setMode(next);
-            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-              content: Text('Theme: ${switch (next) {
-                PixieThemeMode.system => 'System',
-                PixieThemeMode.light => 'Light',
-                PixieThemeMode.dark => 'Dark',
-              }}'),
-              behavior: SnackBarBehavior.floating,
-            ));
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  'Theme: ${switch (next) {
+                    PixieThemeMode.system => 'System',
+                    PixieThemeMode.light => 'Light',
+                    PixieThemeMode.dark => 'Dark',
+                  }}',
+                ),
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
           },
         ),
         const SizedBox(width: 8),
@@ -119,10 +131,22 @@ class _AppShellState extends State<AppShell> {
           selectedIndex: _index,
           onDestinationSelected: _go,
           destinations: const [
-            NavigationDestination(icon: Icon(Icons.cloud_upload_outlined), label: 'Upload'),
-            NavigationDestination(icon: Icon(Icons.tune_rounded), label: 'Settings'),
-            NavigationDestination(icon: Icon(Icons.account_circle_outlined), label: 'Accounts'),
-            NavigationDestination(icon: Icon(Icons.info_outline), label: 'About'),
+            NavigationDestination(
+              icon: Icon(Icons.cloud_upload_outlined),
+              label: 'Upload',
+            ),
+            NavigationDestination(
+              icon: Icon(Icons.tune_rounded),
+              label: 'Settings',
+            ),
+            NavigationDestination(
+              icon: Icon(Icons.account_circle_outlined),
+              label: 'Accounts',
+            ),
+            NavigationDestination(
+              icon: Icon(Icons.info_outline),
+              label: 'About',
+            ),
           ],
         ),
       );
@@ -136,10 +160,14 @@ class _AppShellState extends State<AppShell> {
             index: _index,
             onSelect: _go,
             dark: widget.theme.mode == PixieThemeMode.dark,
-            onDarkToggle: (value) => widget.theme
-                .setMode(value ? PixieThemeMode.dark : PixieThemeMode.light),
+            onDarkToggle: (value) => widget.theme.setMode(
+              value ? PixieThemeMode.dark : PixieThemeMode.light,
+            ),
           ),
-          VerticalDivider(width: 1, color: cs.outlineVariant.withValues(alpha: 0.4)),
+          VerticalDivider(
+            width: 1,
+            color: cs.outlineVariant.withValues(alpha: 0.4),
+          ),
           Expanded(child: active),
         ],
       ),
@@ -150,15 +178,15 @@ class _AppShellState extends State<AppShell> {
     final color = _paused
         ? Colors.amber.shade700
         : _running
-            ? Colors.blue.shade700
-            : Colors.green.shade700;
+        ? Colors.blue.shade700
+        : Colors.green.shade700;
     final label = _paused
         ? 'Paused'
         : _running
-            ? 'Uploading $_done/$_total'
-            : _total > 0
-                ? 'Last run: $_done/$_total'
-                : 'Ready';
+        ? 'Uploading $_done/$_total'
+        : _total > 0
+        ? 'Last run: $_done/$_total'
+        : 'Ready';
     return GestureDetector(
       onTap: () => _go(0),
       child: Container(
@@ -170,20 +198,34 @@ class _AppShellState extends State<AppShell> {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Container(width: 7, height: 7, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+            Container(
+              width: 7,
+              height: 7,
+              decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+            ),
             const SizedBox(width: 8),
-            Text(label,
-                style: TextStyle(color: color, fontWeight: FontWeight.w600, fontSize: 12)),
+            Text(
+              label,
+              style: TextStyle(
+                color: color,
+                fontWeight: FontWeight.w600,
+                fontSize: 12,
+              ),
+            ),
           ],
         ),
       ),
     );
   }
-
 }
 
 class _Sidebar extends StatelessWidget {
-  const _Sidebar({required this.index, required this.onSelect, required this.dark, required this.onDarkToggle});
+  const _Sidebar({
+    required this.index,
+    required this.onSelect,
+    required this.dark,
+    required this.onDarkToggle,
+  });
 
   final int index;
   final ValueChanged<int> onSelect;
@@ -217,20 +259,39 @@ class _Sidebar extends StatelessWidget {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Pixie', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: cs.onSurface)),
-                    Text('photo cloud', style: TextStyle(fontSize: 10, color: cs.onSurfaceVariant)),
+                    Text(
+                      'Pixie',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w800,
+                        color: cs.onSurface,
+                      ),
+                    ),
+                    Text(
+                      'photo cloud',
+                      style: TextStyle(
+                        fontSize: 10,
+                        color: cs.onSurfaceVariant,
+                      ),
+                    ),
                   ],
                 ),
               ],
             ),
           ),
           const SizedBox(height: 28),
-          const Padding(padding: EdgeInsets.symmetric(horizontal: 12), child: MicroLabel('Workspace')),
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 12),
+            child: MicroLabel('Workspace'),
+          ),
           const SizedBox(height: 8),
           _tile(0, Icons.cloud_upload_outlined, 'Upload', cs),
           _tile(2, Icons.account_circle_outlined, 'Accounts', cs),
           const SizedBox(height: 20),
-          const Padding(padding: EdgeInsets.symmetric(horizontal: 12), child: MicroLabel('Tools')),
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 12),
+            child: MicroLabel('Tools'),
+          ),
           const SizedBox(height: 8),
           _tile(1, Icons.tune_rounded, 'Settings', cs),
           const Spacer(),
@@ -240,9 +301,15 @@ class _Sidebar extends StatelessWidget {
             child: SwitchListTile(
               dense: true,
               contentPadding: const EdgeInsets.symmetric(horizontal: 8),
-              secondary: Icon(dark ? Icons.dark_mode_outlined : Icons.light_mode_outlined,
-                  size: 18, color: cs.onSurfaceVariant),
-              title: Text('Dark mode', style: TextStyle(fontSize: 12, color: cs.onSurface)),
+              secondary: Icon(
+                dark ? Icons.dark_mode_outlined : Icons.light_mode_outlined,
+                size: 18,
+                color: cs.onSurfaceVariant,
+              ),
+              title: Text(
+                'Dark mode',
+                style: TextStyle(fontSize: 12, color: cs.onSurface),
+              ),
               value: dark,
               onChanged: onDarkToggle,
             ),
@@ -266,19 +333,27 @@ class _Sidebar extends StatelessWidget {
             duration: const Duration(milliseconds: 160),
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             decoration: BoxDecoration(
-              color: selected ? cs.primary.withValues(alpha: 0.11) : Colors.transparent,
+              color: selected
+                  ? cs.primary.withValues(alpha: 0.11)
+                  : Colors.transparent,
               borderRadius: BorderRadius.circular(11),
             ),
             child: Row(
               children: [
-                Icon(icon, size: 18, color: selected ? cs.primary : cs.onSurfaceVariant),
+                Icon(
+                  icon,
+                  size: 18,
+                  color: selected ? cs.primary : cs.onSurfaceVariant,
+                ),
                 const SizedBox(width: 12),
-                Text(label,
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-                      color: selected ? cs.primary : cs.onSurface,
-                    )),
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                    color: selected ? cs.primary : cs.onSurface,
+                  ),
+                ),
               ],
             ),
           ),

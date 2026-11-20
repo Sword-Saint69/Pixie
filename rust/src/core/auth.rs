@@ -43,11 +43,7 @@ fn hex_encode(bytes: &[u8]) -> String {
     out
 }
 
-pub fn build_google_photos_credential(
-    email: &str,
-    master_token: &str,
-    android_id: &str,
-) -> String {
+pub fn build_google_photos_credential(email: &str, master_token: &str, android_id: &str) -> String {
     let mut p: HashMap<String, String> = HashMap::new();
     p.insert("androidId".into(), android_id.into());
     p.insert("app".into(), GOOGLE_PHOTOS_PACKAGE.into());
@@ -190,7 +186,10 @@ pub fn validate_credential_shape(credential: &str) -> Result<String> {
         .filter(|key| params.get(*key).is_none_or(|v| v.is_empty()))
         .collect();
     if !missing.is_empty() {
-        bail!("auth string missing required fields: {}", missing.join(", "));
+        bail!(
+            "auth string missing required fields: {}",
+            missing.join(", ")
+        );
     }
     Ok(params["Email"].clone())
 }
